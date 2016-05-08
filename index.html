@@ -1,0 +1,46 @@
+<html>
+  <head>
+    <!--<link rel="stylesheet" href="css/ansi.css" type="text/css" media="all" />-->
+    <style>
+      html, body {
+        background-color: #333;
+        color: white;
+        font-family: monospace;
+        margin: 0;
+        padding: 0;
+      }
+      #console {
+        height: 400px;
+        width: 750px;
+        position:relative;
+        background-color: black;
+        border: 2px solid #CCC;
+        margin: 0 auto;
+        margin-top: 50px;
+      }
+      .jsconsole-input {
+        color: #dd0;
+      }
+      .jsconsole-old-input {
+        color: #bb0;
+        font-weight: normal;
+      }
+      .brace {
+        color: #00FFFF;
+      }
+      .paran {
+        color: #FF00FF;
+      }
+      .bracket {
+        color: #FFFF00;
+      }
+      .jsconsole-composition {
+        background-color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="console"></div>
+    <script src="lib/interpret.js" type="text/javascript"></script>
+  </body>
+</html>
