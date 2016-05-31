@@ -87,7 +87,7 @@ module.exports = {
 
 },{}],2:[function(require,module,exports){
 var initialize = require('./interpret').initialize;
-var interpret = require('./interpret2');
+var interpret = require('./interpret2').interpret;
 var interpreter = require('./interpreter');
 
 // function (interpret) {}
@@ -576,6 +576,7 @@ module.exports = {
 
 },{"./elements":1,"./interpreter":5}],4:[function(require,module,exports){
 var modifyElement = require('./interpret').modifyElement;
+var elements = require('./elements');
 
 function interpret(appState, command) {
   if (command.ui != null) {
@@ -590,12 +591,11 @@ function interpret(appState, command) {
   }
 };
 
-module.exports = interpret;
-
 // TODO: Refactor.
-/*
 function translate (appState, command) {
   var changes = [];
+  var prompt = 'jsconsole-prompt-text';
+  var postPrompt = 'jsconsole-prompt-text-post-cursor';
   for (var outerKey in command) {
     switch (outerKey) {
       case 'cursor':
@@ -603,14 +603,14 @@ function translate (appState, command) {
           switch (innerKey) {
             case 'pre':
               changes.push({
-                child: { mode: 'class', key: { class: 'jsconsole-prompt-text', index: 0 }},
-                changes: { command[outerKey][innerKey] }
+                child: { mode: 'class', key: { class: prompt, index: 0 }},
+                changes: { text: command[outerKey][innerKey] }
               });
               break;
             case 'post':
               changes.push({
-                child: { mode: 'class', key: { class: 'jsconsole-prompt-text-post-cursor', index: 0 }},
-                changes: { command[outerKey][innerKey] }
+                child: { mode: 'class', key: { class: postPrompt, index: 0 }},
+                changes: { text: command[outerKey][innerKey] }
               });
               break;
           }
@@ -623,6 +623,18 @@ function translate (appState, command) {
             case 'rewind':
               break;
             case 'submit':
+              changes.push({
+                child: { mode: 'query', key: { query: 'div pre', index: 0 }},
+                changes: {
+                  children: {
+                    add: [
+                      elements.createOldPrompt(command[outerKey][innerKey]),
+                      elements.createOldPromptReply(command[outerKey][innerKey]),
+                      elements.createPrompt()
+                    ]
+                  }
+                }
+              });
               break;
           }
         }
@@ -630,9 +642,13 @@ function translate (appState, command) {
     }
   }
 };
-*/
 
-},{"./interpret":3}],5:[function(require,module,exports){
+module.exports = {
+  interpret: interpret,
+  translate: translate
+};
+
+},{"./elements":1,"./interpret":3}],5:[function(require,module,exports){
 elements = require('./elements.js');
 var createPrompt = elements.createPrompt;
 var createOldPrompt = elements.createOldPrompt;
@@ -663,11 +679,16 @@ function addChar(appState, char) {
         ]
       }
     }
+
   };
 }
 
 function addChar2(appState, char) {
   return { cursor: { pre: { append: char }} };
+}
+
+function addChar3(appState, char) {
+  return { commandType: 'addChar', char: char };
 }
 
 function deleteLeftChar(appState) {
@@ -705,6 +726,14 @@ function deleteLeftChar2(appState) {
   return { cursor: { pre: { slice: { start: 0, end: end }}}};
 }
 
+function deleteLeftChar3(appState) {
+  var innerText = appState.cursor.pre;
+  var end = innerText.length - 1;
+  return innerText.length === 0
+    ? { commandType: 'noOp' }
+    : { commandType: 'deleteLeftChar', end: end };
+}
+
 function deleteRightChar(appState) {
   var innerText = appState.cursor.post;
   return innerText.length === 0 ? {} :
@@ -738,6 +767,13 @@ function deleteRightChar2(appState) {
   return innerText.length === 0
     ? {} 
     : { cursor: { post: { slice: { start: 0 }}}};
+}
+
+function deleteRightChar3() {
+  var innerText = appState.cursor.post;
+  return innerText.length == 0
+    ? { commandType: 'noOp' }
+    : { commandType: 'deleteRightChar' };
 }
 
 function moveCursorLeft(appState) {
@@ -790,6 +826,15 @@ function moveCursorLeft2(appState) {
       };
 }
 
+function moveCursorLeft3() {
+  var __promptText = appState.cursor.pre;
+  var __promptTextPost = appState.cursor.post;
+  var index = __promptText.length - 1;
+  return __promptText.length === 0
+    ? { commandType: 'noOp' }
+    : { commandType: 'moveCursorLeft', index: index, __promptText: __promptText };
+}
+
 function moveCursorRight(appState) {
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
@@ -826,7 +871,7 @@ function moveCursorRight(appState) {
     };
 }
 
-function moveCursorLeft2(appState) {
+function moveCursorRight2(appState) {
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
   var length = __promptTextPost.length;
@@ -838,6 +883,15 @@ function moveCursorLeft2(appState) {
           post: { slice: { start: 1, end: length }}
         }
       };
+}
+
+function moveCursorRight3() {
+  var __promptText = appState.cursor.pre;
+  var __promptTextPost = appState.cursor.post;
+  var length = __promptTextPost.length;
+  return length === 0
+    ? { commandType: 'noOp' }
+    : { commandType: 'moveCursorRight', length: length, __promptTextPost: __promptTextPost };
 }
 
 function fastForwardHistory(appState) {
@@ -894,6 +948,18 @@ function fastForwardHistory2(appState) {
   };
 }
 
+// SIDE-EFFECT!
+function fastForwardHistory3() {
+  var content = appState.history.future.pop();
+  if (content == null) {
+    return { commandType: 'noOp' };
+  }
+  var __promptText = appState.cursor.pre;
+  var __promptTextPost = appState.cursor.post;
+  var __text = String.trim(__promptText + __promptTextPost);
+  return { commandType: 'fastForwardHistory', content: content, __text: __text };
+}
+
 function rewindHistory(appState) {
   var content = appState.history.past.pop();
   if (content == null) {
@@ -935,6 +1001,7 @@ function rewindHistory(appState) {
   };
 }
 
+// SIDE-EFFECT!
 function rewindHistory2(appState) {
   var content = appState.history.past.pop();
   if (content == null) { return {}; }
@@ -948,8 +1015,20 @@ function rewindHistory2(appState) {
   };
 }
 
+// SIDE-EFFECT!
+function rewindHistory3(appState) {
+  var content = appState.history.past.pop();
+  if (content == null) {
+    return { commandType: 'noOp' };
+  }
+  var __promptText = appState.cursor.pre;
+  var __promptTextPost = appState.cursor.post;
+  var __text = String.trim(__promptText + __promptTextPost);
+  return { commandType: 'rewindHistory', content: content, __text: __text };
+}
+
 function submit(appState) {
-  __promptText = appState.cursor.pre;
+  var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
   var __text = __promptText + __promptTextPost;
   return {
@@ -979,13 +1058,14 @@ function submit(appState) {
           }
         ]
       }
+
     }
   };
 }
 
 // The UI interpreter also has a display history for prompts and responses.
 function submit2(appState) {
-  __promptText = appState.cursor.pre;
+  var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
   var __text = __promptText + __promptTextPost;
   return {
@@ -993,6 +1073,13 @@ function submit2(appState) {
     //history: { past: { push: __text }}
     history: { submit: __text }
   };
+}
+
+function submit3(appState) {
+  var __promptText = appState.cursor.pre;
+  var __promptTextPost = appState.cursor.post;
+  var __text = __promptText + __promptTextPost;
+  return { commandType: 'submit', __text: __text };
 }
 
 var interpreter = {
@@ -1005,14 +1092,24 @@ var interpreter = {
   rewindHistory: rewindHistory,
   submit: submit,
 
-  addChar2: addChar,
-  deleteLeftChar2: deleteLeftChar,
-  deleteRightChar2: deleteRightChar,
-  fastForwardHistory2: fastForwardHistory,
-  moveCursorLeft2: moveCursorLeft,
-  moveCursorRight2: moveCursorRight,
-  rewindHistory2: rewindHistory,
-  submit2: submit
+  addChar2: addChar2,
+  deleteLeftChar2: deleteLeftChar2,
+  deleteRightChar2: deleteRightChar2,
+  fastForwardHistory2: fastForwardHistory2,
+  moveCursorLeft2: moveCursorLeft2,
+  moveCursorRight2: moveCursorRight2,
+  rewindHistory2: rewindHistory2,
+  submit2: submit2,
+
+  addChar3: addChar3,
+  deleteLeftChar3: deleteLeftChar3,
+  deleteRightChar3: deleteRightChar3,
+  fastForwardHistory3: fastForwardHistory3,
+  moveCursorLeft3: moveCursorLeft3,
+  moveCursorRight3: moveCursorRight3,
+  rewindHistory3: rewindHistory3,
+  submit3: submit3,
+
 };
 
 module.exports = interpreter;
