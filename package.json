@@ -1,0 +1,19 @@
+{
+  "name": "jsconsole",
+  "private": true,
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "devbundle": "browserify lib/initialize.js -o build/output.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "browserify": "^13.0.1",
+    "cough-syrup": "0.0.1",
+    "coughify": "0.0.0",
+    "strictify": "^0.2.0"
+  }
+}
