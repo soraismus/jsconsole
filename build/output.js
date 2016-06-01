@@ -87,10 +87,13 @@ module.exports = {
 
 },{}],2:[function(require,module,exports){
 var initialize = require('./interpret').initialize;
-var interpret = require('./interpret2').interpret;
+//var interpret = require('./interpret2').interpret;
+var translate = require('./interpret2').translate;
 var interpreter = require('./interpreter');
 
-// function (interpret) {}
+var interpretAppState = require('./interpretAppState.js');
+var interpretUi = require('./interpretUi.js');
+var modifyElement = require('./interpret').modifyElement;
 
 initialize();
 
@@ -105,38 +108,49 @@ document.addEventListener(
     var command;
     switch (event.keyCode) {
       case 13: // enter
-        command = interpreter.submit(appState);
+        command = interpreter.submit3(appState);
         break;
       case 8: // backspace
-        command = interpreter.deleteLeftChar(appState);
+        event.preventDefault();
+        command = interpreter.deleteLeftChar3(appState);
         break;
       case 37: // left;
         event.preventDefault();
-        command = interpreter.moveCursorLeft(appState);
+        command = interpreter.moveCursorLeft3(appState);
         break;
       case 39: // right;
         event.preventDefault();
-        command = interpreter.moveCursorRight(appState);
+        command = interpreter.moveCursorRight3(appState);
         break;
       case 38: // up;
-        command = interpreter.rewindHistory(appState);
+        event.preventDefault();
+        command = interpreter.rewindHistory3(appState);
         break;
       case 40: // down;
-        command = interpreter.fastForwardHistory(appState);
+        event.preventDefault();
+        command = interpreter.fastForwardHistory3(appState);
         break;
       case 46: // delete
-        command = interpreter.deleteRightChar(appState);
+        event.preventDefault();
+        command = interpreter.deleteRightChar3(appState);
         break;
       case 0:
-        command = interpreter.addChar(
-          appState,
-          String.fromCharCode(event.charCode));
+        command = interpreter.addChar3(appState, String.fromCharCode(event.charCode));
+        break;
+      default:
+        command = interpreter.addChar3(appState, String.fromCharCode(event.charCode));
         break;
     }
-    appState = interpret(appState, command);
+    var changes = translate(interpretUi(command));
+    for (var index in changes) {
+      modifyElement(
+        document.getElementById('console'),
+        changes[index]);
+    }
+    appState = interpretAppState(command)(appState);
   });
 
-},{"./interpret":3,"./interpret2":4,"./interpreter":5}],3:[function(require,module,exports){
+},{"./interpret":3,"./interpret2":4,"./interpretAppState.js":5,"./interpretUi.js":6,"./interpreter":7}],3:[function(require,module,exports){
 var interpreter = require('./interpreter');
 var elements = require('./elements');
 
@@ -574,7 +588,7 @@ module.exports = {
   modifyElement: modifyElement,
 };
 
-},{"./elements":1,"./interpreter":5}],4:[function(require,module,exports){
+},{"./elements":1,"./interpreter":7}],4:[function(require,module,exports){
 var modifyElement = require('./interpret').modifyElement;
 var elements = require('./elements');
 
@@ -592,7 +606,7 @@ function interpret(appState, command) {
 };
 
 // TODO: Refactor.
-function translate (appState, command) {
+function translate (command) {
   var changes = [];
   var prompt = 'jsconsole-prompt-text';
   var postPrompt = 'jsconsole-prompt-text-post-cursor';
@@ -603,14 +617,22 @@ function translate (appState, command) {
           switch (innerKey) {
             case 'pre':
               changes.push({
-                child: { mode: 'class', key: { class: prompt, index: 0 }},
-                changes: { text: command[outerKey][innerKey] }
+                children: {
+                  modify: [{
+                    child: { mode: 'class', key: { class: prompt, index: 0 }},
+                    changes: { text: command[outerKey][innerKey] }
+                  }]
+                }
               });
               break;
             case 'post':
               changes.push({
-                child: { mode: 'class', key: { class: postPrompt, index: 0 }},
-                changes: { text: command[outerKey][innerKey] }
+                children: {
+                  modify: [{
+                    child: { mode: 'class', key: { class: postPrompt, index: 0 }},
+                    changes: { text: command[outerKey][innerKey] }
+                  }]
+                }
               });
               break;
           }
@@ -624,23 +646,29 @@ function translate (appState, command) {
               break;
             case 'submit':
               changes.push({
-                child: { mode: 'query', key: { query: 'div pre', index: 0 }},
-                changes: {
-                  children: {
-                    add: [
-                      elements.createOldPrompt(command[outerKey][innerKey]),
-                      elements.createOldPromptReply(command[outerKey][innerKey]),
-                      elements.createPrompt()
-                    ]
-                  }
+                children: {
+                  remove: [{ mode: 'class', key: { class: 'jsconsole-prompt', index: 0 }}],
+                  modify: [{
+                    child: { mode: 'query', key: { query: 'div pre', index: 0 }},
+                    changes: {
+                      children: {
+                        add: [
+                          elements.createOldPrompt(command[outerKey][innerKey]),
+                          elements.createOldPromptReply(command[outerKey][innerKey]),
+                          elements.createPrompt()
+                        ]
+                      }
+                    }
+
+                  }]
                 }
               });
               break;
           }
         }
-
     }
   }
+  return changes;
 };
 
 module.exports = {
@@ -649,6 +677,206 @@ module.exports = {
 };
 
 },{"./elements":1,"./interpret":3}],5:[function(require,module,exports){
+function interpretAppState(command) {
+  switch (command.commandType) {
+    case 'addChar':
+      return function (appState) {
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: appState.cursor.pre + command.char,
+            post: appState.cursor.post
+          }
+        };
+      };
+
+    case 'deleteLeftChar':
+      return function (appState) {
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: command.innerText.slice(0, command.end),
+            post: appState.cursor.post
+          }
+        };
+      };
+
+    case 'deleteRightChar':
+      return function (appState) {
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: appState.cursor.pre,
+            post: appState.cursor.post.slice(1)
+          }
+        };
+      };
+
+    case 'moveCursorLeft':
+      return function (appState) {
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: appState.cursor.pre.slice(0, command.index),
+            post: command.__promptText[command.index] + appState.cursor.post
+          }
+        };
+      };
+
+    case 'moveCursorRight':
+      return function (appState) {
+        var __promptText = appState.cursor.pre;
+        var index = __promptText.length - 1;
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: __promptText + command.__promptTextPost[0],
+            post: command.__promptTextPost.slice(1)
+          }
+        };
+      };
+
+    case 'fastForwardHistory':
+      return function (appState) {
+        var content = appState.history.future.pop();
+        var __promptText = document.getElementsByClassName('jsconsole-prompt-text')[0].innerText;
+        var __promptTextPost = document.getElementsByClassName('jsconsole-prompt-text-post-cursor')[0].innerText;
+        var __text = (__promptText + __promptTextPost).trim();
+        var pastCopy = appState.history.past.slice();
+        pastCopy.push(__text.trim());
+        return {
+          cursor: appState.cursor,
+          history: { past: pastCopy, future: appState.history.future }
+        };
+      };
+
+    /*
+      return function (appState) {
+        var pastCopy = appState.history.past.slice();
+        var entry = command.__text.trim();
+        pastCopy.push(entry);
+        return {
+          //cursor: appState.cursor,
+          cursor: { pre: entry, post: '' },
+          history: { past: pastCopy, future: appState.history.future }
+        };
+      };
+    */
+
+    case 'rewindHistory':
+      return function (appState) {
+        var content = appState.history.past.pop();
+        var __promptText = document.getElementsByClassName('jsconsole-prompt-text')[0].innerText;
+        var __promptTextPost = document.getElementsByClassName('jsconsole-prompt-text-post-cursor')[0].innerText;
+        var __text = (__promptText + __promptTextPost).trim();
+
+        var futureCopy = appState.history.future.slice();
+        futureCopy.push(__text.trim());
+        return {
+          cursor: appState.cursor,
+          history: { past: appState.history.past, future: futureCopy }
+        };
+      };
+
+    case 'submit':
+      return function (appState) {
+        var pastCopy = appState.history.past.slice();
+        pastCopy.push(command.__text.trim());
+        return {
+          cursor: { pre: '', post: '' },
+          history: { past: pastCopy, future: appState.history.future }
+        };
+      };
+
+    case 'noOp':
+      return function (appState) {
+        return appState;
+      };
+
+  }
+}
+
+module.exports = interpretAppState;
+
+},{}],6:[function(require,module,exports){
+function interpretUi(command) {
+  switch (command.commandType) {
+    case 'addChar':
+      return {
+        cursor: {
+          pre: { append: command.char }
+        }
+      };
+
+    case 'deleteLeftChar':
+      return {
+        cursor: {
+          pre: { slice: { start: 0, end: command.end }}
+        }
+      };
+
+    case 'deleteRightChar':
+      return {
+        cursor: {
+          post: { slice: { start: 1 }}
+        }
+      };
+
+    case 'moveCursorLeft':
+      return {
+        cursor: {
+          pre: { slice: { start: 0, end: command.index }},
+          post: { prepend: command.__promptText[command.index] }
+        }
+      };
+
+    case 'moveCursorRight':
+      return {
+        cursor: {
+          pre: { append: command.__promptTextPost[0] },
+          post: { slice: { start: 1, end: command.length }}
+        }
+      };
+
+      case 'fastForwardHistory':
+      return {
+      cursor: {
+          pre: { replace: command.content },
+          post: { erase: true }},
+        history: {
+          fastForward: command.__text
+        }
+      };
+
+    case 'rewindHistory':
+      return {
+        cursor: {
+          pre: { replace: command.content },
+          post: { erase: true }},
+        history: {
+          rewind: command.__text
+        }
+      };
+
+    case 'submit':
+      return {
+        cursor: {
+          pre: { erase: true },
+          post: { erase: true }},
+        history: {
+          submit: command.__text
+        }
+      };
+
+    case 'noOp':
+      return {};
+
+  }
+}
+
+module.exports = interpretUi;
+
+},{}],7:[function(require,module,exports){
 elements = require('./elements.js');
 var createPrompt = elements.createPrompt;
 var createOldPrompt = elements.createOldPrompt;
@@ -731,7 +959,7 @@ function deleteLeftChar3(appState) {
   var end = innerText.length - 1;
   return innerText.length === 0
     ? { commandType: 'noOp' }
-    : { commandType: 'deleteLeftChar', end: end };
+    : { commandType: 'deleteLeftChar', end: end, innerText: innerText };
 }
 
 function deleteRightChar(appState) {
@@ -769,7 +997,7 @@ function deleteRightChar2(appState) {
     : { cursor: { post: { slice: { start: 0 }}}};
 }
 
-function deleteRightChar3() {
+function deleteRightChar3(appState) {
   var innerText = appState.cursor.post;
   return innerText.length == 0
     ? { commandType: 'noOp' }
@@ -826,7 +1054,7 @@ function moveCursorLeft2(appState) {
       };
 }
 
-function moveCursorLeft3() {
+function moveCursorLeft3(appState) {
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
   var index = __promptText.length - 1;
@@ -885,7 +1113,7 @@ function moveCursorRight2(appState) {
       };
 }
 
-function moveCursorRight3() {
+function moveCursorRight3(appState) {
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
   var length = __promptTextPost.length;
@@ -904,11 +1132,11 @@ function fastForwardHistory(appState) {
   }
   var __promptText = document.getElementsByClassName('jsconsole-prompt-text')[0].innerText;
   var __promptTextPost = document.getElementsByClassName('jsconsole-prompt-text-post-cursor')[0].innerText;
-  var __text = String.trim(__promptText + __promptTextPost);
+  var __text = (__promptText + __promptTextPost).trim();
   return {
     appState: function (appState) {
       var pastCopy = appState.history.past.slice();
-      pastCopy.push(String.trim(__text));
+      pastCopy.push(__text.trim());
       return {
         cursor: appState.cursor,
         history: { past: pastCopy, future: appState.history.future }
@@ -940,7 +1168,7 @@ function fastForwardHistory2(appState) {
   if (content == null) { return {}; }
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
-  var __text = String.trim(__promptText + __promptTextPost);
+  var __text = (__promptText + __promptTextPost).trim();
   return {
     cursor: { pre: { replace: content }, post: { erase: true }},
     //history: { past: { push: __text }}
@@ -949,14 +1177,14 @@ function fastForwardHistory2(appState) {
 }
 
 // SIDE-EFFECT!
-function fastForwardHistory3() {
+function fastForwardHistory3(appState) {
   var content = appState.history.future.pop();
   if (content == null) {
     return { commandType: 'noOp' };
   }
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
-  var __text = String.trim(__promptText + __promptTextPost);
+  var __text = (__promptText + __promptTextPost).trim();
   return { commandType: 'fastForwardHistory', content: content, __text: __text };
 }
 
@@ -970,11 +1198,11 @@ function rewindHistory(appState) {
   }
   var __promptText = document.getElementsByClassName('jsconsole-prompt-text')[0].innerText;
   var __promptTextPost = document.getElementsByClassName('jsconsole-prompt-text-post-cursor')[0].innerText;
-  var __text = String.trim(__promptText + __promptTextPost);
+  var __text = (__promptText + __promptTextPost).trim();
   return {
     appState: function (appState) {
       var futureCopy = appState.history.future.slice();
-      futureCopy.push(String.trim(__text));
+      futureCopy.push(__text.trim());
       return {
         cursor: appState.cursor,
         history: { past: appState.history.past, future: futureCopy }
@@ -1007,7 +1235,7 @@ function rewindHistory2(appState) {
   if (content == null) { return {}; }
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
-  var __text = String.trim(__promptText + __promptTextPost);
+  var __text = (__promptText + __promptTextPost).trim();
   return {
     cursor: { pre: { replace: content }, post: { erase: true }},
     //history: { future: { push: __text }}
@@ -1023,7 +1251,7 @@ function rewindHistory3(appState) {
   }
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
-  var __text = String.trim(__promptText + __promptTextPost);
+  var __text = (__promptText + __promptTextPost).trim();
   return { commandType: 'rewindHistory', content: content, __text: __text };
 }
 
@@ -1034,7 +1262,7 @@ function submit(appState) {
   return {
     appState: function (appState) {
       var pastCopy = appState.history.past.slice();
-      pastCopy.push(String.trim(__text));
+      pastCopy.push(__text.trim());
       return {
         cursor: { pre: '', post: '' },
         history: { past: pastCopy, future: appState.history.future }
