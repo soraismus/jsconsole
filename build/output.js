@@ -133,6 +133,7 @@ function createOldPrompt(text) {
 function createOldPromptReply(text) {
   return {
     tag: 'span',
+    classes: { 'jsconsole-old-prompt-response': true },
     children: [
       {
         tag: 'span',
@@ -506,24 +507,71 @@ function translate (command) {
             case 'rewind':
               break;
             case 'submit':
-              changes.push({
-                children: {
-                  remove: [{ mode: 'class', key: { class: 'jsconsole-prompt', index: 0 }}],
-                  modify: [{
-                    child: { mode: 'query', key: { query: 'div pre', index: 0 }},
-                    changes: {
-                      children: {
-                        add: [
-                          elements.createOldPrompt(command[outerKey][innerKey]),
-                          elements.createOldPromptReply(command[outerKey][innerKey]),
-                          elements.createPrompt()
-                        ]
-                      }
-                    }
+              console.log('translate -- submit');
+              console.log('display: ', command[outerKey][innerKey].display);
+              console.log('text: ', command[outerKey][innerKey].text);
 
-                  }]
-                }
-              });
+              if (command[outerKey][innerKey].display.length < 11) {
+
+                changes.push({
+                  children: {
+                    remove: [
+                      {
+                        mode: 'class',
+                        key: { class: 'jsconsole-prompt', index: 0 }
+                      }
+                    ],
+                    modify: [
+                      {
+                        child: {
+                          mode: 'query',
+                          key: { query: 'div pre', index: 0 }
+                        },
+                        changes: {
+                          children: {
+                            add: [
+                              elements.createOldPrompt(command[outerKey][innerKey].text),
+                              elements.createOldPromptReply(command[outerKey][innerKey].text),
+                              elements.createPrompt()
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                });
+
+              } else {
+
+                var display = command[outerKey][innerKey].display;
+
+                changes.push({
+                  children: {
+                    modify: [
+                      {
+                        child: {
+                          mode: 'class',
+                          key: { class: 'jsconsole-old-prompt-response', index: 10 }
+                        },
+                        changes: {
+                          children: {
+                            modify: [
+                              {
+                                child: { mode: 'tag', key: { tag: 'span', index: 0 }},
+                                changes: { text: { replace: ' --------------------' }}
+                              }
+                            ]
+                          }
+
+                        }
+                      }
+                    ]
+
+                  }
+                });
+
+              }
+
               break;
           }
         }
@@ -757,6 +805,11 @@ function interpretAppState(command) {
           pastCopy.push(cursorText);
         }
 
+        // Length of displayCopy should perhaps not be accessible here.
+        if (displayCopy.length >= 11) {
+          displayCopy.shift();
+        }
+
         displayCopy.push([cursorText, cursorText]);
 
         var result = {
@@ -866,7 +919,10 @@ function interpretUi(command) {
           pre: { erase: true },
           post: { erase: true }},
         history: {
-          submit: command.__text
+          submit: {
+            display: command.display,
+            text: command.__text
+          }
         }
       };
 
@@ -883,11 +939,6 @@ elements = require('./elements.js');
 var createPrompt = elements.createPrompt;
 var createOldPrompt = elements.createOldPrompt;
 var createOldPromptReply = elements.createOldPromptReply;
-
-// Because the model is so simple, perhaps
-// no diffs/commands are necessary. Give the full, current appState
-// to the DOM interpreter.
-// What about paging/scrolling, however?
 
 function addChar3(appState, char) {
   return { commandType: 'addChar', char: char };
@@ -985,7 +1036,11 @@ function submit3(appState) {
   var __promptTextPost = appState.cursor.post;
   var __text = __promptText + __promptTextPost;
   var text = __text.trim();
-  return { commandType: 'submit', __text: text };
+  return {
+    commandType: 'submit',
+    __text: text,
+    display: appState.history.display
+  };
 }
 
 var interpreter = {
