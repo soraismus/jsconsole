@@ -92,6 +92,25 @@ function translate (command) {
 
                 var display = command[outerKey][innerKey].display;
 
+                var modifyOldPrompt = function (index, replacementText) {
+                  return {
+                    child: {
+                      mode: 'class',
+                      key: { class: 'jsconsole-old-prompt', index: index }
+                    },
+                    changes: {
+                      children: {
+                        modify: [
+                          {
+                            child: { mode: 'tag', key: { tag: 'span', index: 0 }},
+                            changes: { text: { replace: '.... Lisp> ' + replacementText + '\n' }}
+                          }
+                        ]
+                      }
+                    }
+                  };
+                };
+
                 var modifyOldPromptResponse = function (index, replacementText) {
                   return {
                     child: {
@@ -103,40 +122,48 @@ function translate (command) {
                         modify: [
                           {
                             child: { mode: 'tag', key: { tag: 'span', index: 0 }},
-                            changes: { text: { replace: replacementText }}
+                            changes: { text: { replace: '.... ==> ' + replacementText + '\n' }}
                           }
                         ]
                       }
                     }
                   };
-              };
+                };
+
+                var _0to11 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+                var promptModifications = _0to11.map(function (index) {
+                  return modifyOldPrompt(index, display[index][0]);
+                });
+                var promptResponseModifications = _0to11.map(function (index) {
+                  return modifyOldPromptResponse(index, display[index][1]);
+                });
+                var modifications = promptModifications.concat(promptResponseModifications);
 
                 changes.push({
                   children: {
                     modify: [
 
-                      {
-                        child: {
-                          mode: 'class',
-                          key: { class: 'jsconsole-old-prompt-response', index: 10 }
-                        },
-                        changes: {
-                          children: {
-                            modify: [
-                              {
-                                child: { mode: 'tag', key: { tag: 'span', index: 0 }},
-                                changes: { text: { replace: ' --------------------' }}
-                              }
-                            ]
+                        {
+                          child: {
+                            mode: 'class',
+                            key: { class: 'jsconsole-old-prompt-response', index: 0 }
+                          },
+                          changes: {
+                            children: {
+                              modify: [
+                                {
+                                  child: { mode: 'tag', key: { tag: 'span', index: 0 }},
+                                  changes: { text: { replace: '.... \n' }}
+                                }
+                              ]
+                            }
                           }
                         }
-                      }
+
 
                     ]
-
                   }
                 });
-
               }
 
               break;

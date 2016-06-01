@@ -545,9 +545,29 @@ function translate (command) {
 
                 var display = command[outerKey][innerKey].display;
 
+                var modifyOldPromptResponse = function (index, replacementText) {
+                  return {
+                    child: {
+                      mode: 'class',
+                      key: { class: 'jsconsole-old-prompt-response', index: index }
+                    },
+                    changes: {
+                      children: {
+                        modify: [
+                          {
+                            child: { mode: 'tag', key: { tag: 'span', index: 0 }},
+                            changes: { text: { replace: replacementText }}
+                          }
+                        ]
+                      }
+                    }
+                  };
+              };
+
                 changes.push({
                   children: {
                     modify: [
+
                       {
                         child: {
                           mode: 'class',
@@ -562,9 +582,9 @@ function translate (command) {
                               }
                             ]
                           }
-
                         }
                       }
+
                     ]
 
                   }
