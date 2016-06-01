@@ -591,12 +591,12 @@ function translate (command) {
                   return modifyOldPromptResponse(i, display[i + 1][1]);
                 });
 
-                var x0 = modifyOldPrompt(10, text);
-                var x1 = modifyOldPromptResponse(10, text);
-
                 var modifications = promptModifications
                   .concat(promptResponseModifications)
-                  .concat([x0, x1]);
+                  .concat([
+                    modifyOldPrompt(10, text),
+                    modifyOldPromptResponse(10, text)
+                  ]);
 
                 changes.push({
                   children: { modify: modifications }
@@ -827,8 +827,8 @@ function interpretAppState(command) {
         var futureCopy = appState.history.future.slice();
         var displayCopy = appState.history.display.slice();
 
-        for (var index in futureCopy) {
-          pastCopy.push(futureCopy[index]);
+        for (var index in pastCopy) {
+          futureCopy.unshift(pastCopy[index]);
         }
 
         if (cursorText != '') {
