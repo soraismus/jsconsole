@@ -827,8 +827,8 @@ function interpretAppState(command) {
         var futureCopy = appState.history.future.slice();
         var displayCopy = appState.history.display.slice();
 
-        for (var index in pastCopy) {
-          futureCopy.unshift(pastCopy[index]);
+        for (var index = futureCopy.length - 1; index >= 0; index--) {
+          pastCopy.push(futureCopy[index]);
         }
 
         if (cursorText != '') {
