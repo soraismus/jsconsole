@@ -98,7 +98,7 @@ var modifyElement = require('./interpret').modifyElement;
 initialize();
 
 var appState = {
-  history: { past: [], future: [] },
+  history: { past: [], future: [], cache: [] },
   cursor: { pre: '', post: '' }
 };
 
@@ -736,6 +736,43 @@ function interpretAppState(command) {
         };
       };
 
+    case 'restoreCache':
+      return function (appState) {
+        console.log('RESTORE-CACHE');
+        console.log('orig appstate.cursor.pre: ', appState.cursor.pre);
+        console.log('orig appstate.cursor.post: ', appState.cursor.post);
+        console.log('orig appstate.history.past: ', appState.history.past);
+        console.log('orig appstate.history.future: ', appState.history.future);
+        console.log('orig appstate.history.cache: ', appState.history.cache);
+
+        var preCursorText = appState.cursor.pre;
+        var postCursorText = appState.cursor.post;
+        var cursorText = (preCursorText + postCursorText).trim();
+
+        var entry = appState.history.cache[0];
+        var pastCopy = appState.history.past.slice();
+
+        pastCopy.push(cursorText);
+
+        var result = {
+          cursor: {
+            pre: entry,
+            post: ''
+          },
+          history: {
+            past: pastCopy,
+            future: appState.history.future,
+            cache: []
+          }
+        };
+        console.log('new appstate.cursor.pre: ', result.cursor.pre);
+        console.log('new appstate.cursor.post: ', result.cursor.post);
+        console.log('new appstate.history.past: ', result.history.past);
+        console.log('new appstate.history.future: ', result.history.future);
+        console.log('new appstate.history.cache: ', result.history.cache);
+        return result;
+      };
+
     case 'fastForwardHistory':
       return function (appState) {
         console.log('FASTFORWARD');
@@ -743,6 +780,7 @@ function interpretAppState(command) {
         console.log('orig appstate.cursor.post: ', appState.cursor.post);
         console.log('orig appstate.history.past: ', appState.history.past);
         console.log('orig appstate.history.future: ', appState.history.future);
+        console.log('orig appstate.history.cache: ', appState.history.cache);
 
         var preCursorText = appState.cursor.pre;
         var postCursorText = appState.cursor.post;
@@ -752,17 +790,30 @@ function interpretAppState(command) {
         var entry = appState.history.future[length - 1];
         var futureCopy = appState.history.future.slice(0, length - 1);
         var pastCopy = appState.history.past.slice();
+        var cacheCopy = appState.history.cache.slice();
 
-        pastCopy.push(cursorText);
+        if (cacheCopy.length == 0) {
+          cacheCopy.push(cursorText);
+        } else {
+          pastCopy.push(cursorText);
+        }
 
         var result = {
-          cursor: { pre: entry, post: '' },
-          history: { past: pastCopy, future: futureCopy }
+          cursor: {
+            pre: entry,
+            post: ''
+          },
+          history: {
+            past: pastCopy,
+            future: futureCopy,
+            cache: cacheCopy
+          }
         };
         console.log('new appstate.cursor.pre: ', result.cursor.pre);
         console.log('new appstate.cursor.post: ', result.cursor.post);
         console.log('new appstate.history.past: ', result.history.past);
         console.log('new appstate.history.future: ', result.history.future);
+        console.log('new appstate.history.cache: ', result.history.cache);
         return result;
       };
 
@@ -773,6 +824,7 @@ function interpretAppState(command) {
         console.log('orig appstate.cursor.post: ', appState.cursor.post);
         console.log('orig appstate.history.past: ', appState.history.past);
         console.log('orig appstate.history.future: ', appState.history.future);
+        console.log('orig appstate.history.cache: ', appState.history.cache);
 
         var preCursorText = appState.cursor.pre;
         var postCursorText = appState.cursor.post;
@@ -782,17 +834,30 @@ function interpretAppState(command) {
         var entry = appState.history.past[length - 1];
         var pastCopy = appState.history.past.slice(0, length - 1);
         var futureCopy = appState.history.future.slice();
+        var cacheCopy = appState.history.cache.slice();
 
-        futureCopy.push(cursorText);
+        if (cacheCopy.length == 0) {
+          cacheCopy.push(cursorText);
+        } else {
+          futureCopy.push(cursorText);
+        }
 
         var result = {
-          cursor: { pre: entry, post: '' },
-          history: { past: pastCopy, future: futureCopy }
+          cursor: {
+            pre: entry,
+            post: ''
+          },
+          history: {
+            past: pastCopy,
+            future: futureCopy,
+            cache: cacheCopy
+          }
         };
         console.log('new appstate.cursor.pre: ', result.cursor.pre);
         console.log('new appstate.cursor.post: ', result.cursor.post);
         console.log('new appstate.history.past: ', result.history.past);
         console.log('new appstate.history.future: ', result.history.future);
+        console.log('new appstate.history.cache: ', result.history.cache);
         return result;
       };
 
@@ -803,16 +868,39 @@ function interpretAppState(command) {
         console.log('orig appstate.cursor.post: ', appState.cursor.post);
         console.log('orig appstate.history.past: ', appState.history.past);
         console.log('orig appstate.history.future: ', appState.history.future);
+        console.log('orig appstate.history.cache: ', appState.history.cache);
+
+        var preCursorText = appState.cursor.pre;
+        var postCursorText = appState.cursor.post;
+        var cursorText = (preCursorText + postCursorText).trim();
+
         var pastCopy = appState.history.past.slice();
-        pastCopy.push(command.__text.trim());
+        var futureCopy = appState.history.future.slice();
+
+        for (var index in futureCopy) {
+          pastCopy.push(futureCopy[index]);
+        }
+
+        if (cursorText != '') {
+          pastCopy.push(cursorText);
+        }
+
         var result = {
-          cursor: { pre: '', post: '' },
-          history: { past: pastCopy, future: appState.history.future }
+          cursor: {
+            pre: '',
+            post: ''
+          },
+          history: {
+            past: pastCopy,
+            future: [],
+            cache: []
+          }
         };
         console.log('new appstate.cursor.pre: ', result.cursor.pre);
         console.log('new appstate.cursor.post: ', result.cursor.post);
         console.log('new appstate.history.past: ', result.history.past);
         console.log('new appstate.history.future: ', result.history.future);
+        console.log('new appstate.history.cache: ', result.history.cache);
         return result;
       };
 
@@ -866,15 +954,25 @@ function interpretUi(command) {
         }
       };
 
-      case 'fastForwardHistory':
-        return {
-          cursor: {
-            pre: { replace: command.cursorText },
-            post: { erase: true }},
-          history: {
-            fastForward: command.historyEntry
-          }
-        };
+    case 'restoreCache':
+      return {
+        cursor: {
+          pre: { replace: command.cursorText },
+          post: { erase: true }},
+        history: {
+          fastForward: command.historyEntry
+        }
+      };
+
+    case 'fastForwardHistory':
+      return {
+        cursor: {
+          pre: { replace: command.cursorText },
+          post: { erase: true }},
+        history: {
+          fastForward: command.historyEntry
+        }
+      };
 
     case 'rewindHistory':
       return {
@@ -953,8 +1051,24 @@ function moveCursorRight3(appState) {
 }
 
 function fastForwardHistory3(appState) {
-  if (appState.history.future.length <= 0) {
-    return { commandType: 'noOp' };
+  console.log('fastForwardHistory');
+  if (appState.history.future.length <= 0 ) {
+    console.log('future is empty');
+    console.log('cache: ', appState.history.cache);
+    if (appState.history.cache.length > 0) {
+      console.log('cache is occupied');
+      var preCursorText = appState.cursor.pre;
+      var postCursorText = appState.cursor.post;
+      var cursorText = (preCursorText + postCursorText).trim();
+      return {
+        commandType: 'restoreCache',
+        cursorText: appState.history.cache[0],
+        historyEntry: cursorText
+      };
+    } else {
+      console.log('cache is empty');
+      return { commandType: 'noOp' };
+    }
   }
 
   var preCursorText = appState.cursor.pre;
@@ -963,8 +1077,6 @@ function fastForwardHistory3(appState) {
 
   var length = appState.history.future.length;
   var entry = appState.history.future[length - 1];
-  var futureCopy = appState.history.future.slice(0, length - 1);
-  var pastCopy = appState.history.past.slice();
 
   return {
     commandType: 'fastForwardHistory',
@@ -984,8 +1096,6 @@ function rewindHistory3(appState) {
 
   var length = appState.history.past.length;
   var entry = appState.history.past[length - 1];
-  var pastCopy = appState.history.past.slice(0, length - 1);
-  var futureCopy = appState.history.future.slice();
 
   return {
     commandType: 'rewindHistory',
@@ -998,7 +1108,8 @@ function submit3(appState) {
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
   var __text = __promptText + __promptTextPost;
-  return { commandType: 'submit', __text: __text };
+  var text = __text.trim();
+  return { commandType: 'submit', __text: text };
 }
 
 var interpreter = {
