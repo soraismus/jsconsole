@@ -549,7 +549,8 @@ function translate (command) {
             case 'submit':
               console.log('translate -- submit');
               console.log('display: ', command[outerKey][innerKey].display);
-              console.log('text: ', command[outerKey][innerKey].text);
+              console.log('oldPrompt: ', command[outerKey][innerKey].oldPrompt);
+              console.log('response: ', command[outerKey][innerKey].response);
 
               if (command[outerKey][innerKey].display.length < 11) {
                 changes.push({
@@ -569,8 +570,8 @@ function translate (command) {
                         changes: {
                           children: {
                             add: [
-                              elements.createOldPrompt(command[outerKey][innerKey].text),
-                              elements.createOldPromptReply(command[outerKey][innerKey].text),
+                              elements.createOldPrompt(command[outerKey][innerKey].oldPrompt),
+                              elements.createOldPromptReply(command[outerKey][innerKey].response),
                               elements.createPrompt()
                             ]
                           }
@@ -581,7 +582,8 @@ function translate (command) {
                 });
               } else {
                 var display = command[outerKey][innerKey].display;
-                var text = command[outerKey][innerKey].text;
+                var oldPrompt = command[outerKey][innerKey].oldPrompt;
+                var response = command[outerKey][innerKey].response;
 
                 var promptModifications = _0to9.map(function (i) {
                   return modifyOldPrompt(i, display[i + 1][1]);
@@ -594,8 +596,8 @@ function translate (command) {
                 var modifications = promptModifications
                   .concat(promptResponseModifications)
                   .concat([
-                    modifyOldPrompt(10, text),
-                    modifyOldPromptResponse(10, text)
+                    modifyOldPrompt(10, oldPrompt),
+                    modifyOldPromptResponse(10, response)
                   ]);
 
                 changes.push({
@@ -951,7 +953,8 @@ function interpretUi(command) {
         history: {
           submit: {
             display: command.display,
-            text: command.__text
+            oldPrompt: command.oldPrompt,
+            response: command.response
           }
         }
       };
@@ -1061,14 +1064,21 @@ function rewindHistory3(appState) {
   };
 }
 
-function submit3(appState) {
+function submit3(appState, transform) {
+  if (transform == null) {
+    transform = function (value) {
+      return value;
+    };
+  }
+
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
   var __text = __promptText + __promptTextPost;
   var text = __text.trim();
   return {
     commandType: 'submit',
-    __text: text,
+    oldPrompt: text,
+    response: transform(text),
     display: appState.history.display
   };
 }
