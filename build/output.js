@@ -605,7 +605,7 @@ function translate (command) {
                 var response = command[outerKey][innerKey].response;
 
                 var promptModifications = _0to9.map(function (i) {
-                  return modifyOldPrompt(i, display[i + 1][1]);
+                  return modifyOldPrompt(i, display[i + 1][0]);
                 });
 
                 var promptResponseModifications = _0to9.map(function (i) {
@@ -861,7 +861,7 @@ function interpretAppState(command) {
           displayCopy.shift();
         }
 
-        displayCopy.push([cursorText, cursorText]);
+        displayCopy.push([command.oldPrompt, command.response]);
 
         var result = {
           cursor: {
