@@ -1,4 +1,13 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var initialize = require('./initialize.js');
+
+function transform(_string) {
+  return _string + _string;
+}
+
+initialize(transform);
+
+},{"./initialize.js":3}],2:[function(require,module,exports){
 var promptLabelMessage = 'Lisp'
 var promptLabelText = promptLabelMessage + '> '
 
@@ -161,7 +170,7 @@ module.exports = {
   promptLabelText: promptLabelText,
 };
 
-},{}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 var initialize = require('./interpret').initialize;
 //var interpret = require('./interpret2').interpret;
 var translate = require('./interpret2').translate;
@@ -171,70 +180,80 @@ var interpretAppState = require('./interpretAppState.js');
 var interpretUi = require('./interpretUi.js');
 var modifyElement = require('./interpret').modifyElement;
 
-initialize();
-
-var appState = {
-  history: {
-    past: [],
-    future: [],
-    cache: [],
-    display: [],
-  },
-  cursor: {
-    pre: '',
-    post: ''
+function _initialize(transform) {
+  if (transform == null) {
+    transform = function (value) {
+      return value;
+    };
   }
-};
 
-document.addEventListener(
-  'keypress',
-  function (event) {
-    var command;
-    switch (event.keyCode) {
-      case 13: // enter
-        command = interpreter.submit3(appState);
-        break;
-      case 8: // backspace
-        event.preventDefault();
-        command = interpreter.deleteLeftChar3(appState);
-        break;
-      case 37: // left;
-        event.preventDefault();
-        command = interpreter.moveCursorLeft3(appState);
-        break;
-      case 39: // right;
-        event.preventDefault();
-        command = interpreter.moveCursorRight3(appState);
-        break;
-      case 38: // up;
-        event.preventDefault();
-        command = interpreter.rewindHistory3(appState);
-        break;
-      case 40: // down;
-        event.preventDefault();
-        command = interpreter.fastForwardHistory3(appState);
-        break;
-      case 46: // delete
-        event.preventDefault();
-        command = interpreter.deleteRightChar3(appState);
-        break;
-      case 0:
-        command = interpreter.addChar3(appState, String.fromCharCode(event.charCode));
-        break;
-      default:
-        command = interpreter.addChar3(appState, String.fromCharCode(event.charCode));
-        break;
-    }
-    var changes = translate(interpretUi(command));
-    for (var index in changes) {
-      modifyElement(
-        document.getElementById('console'),
-        changes[index]);
-    }
-    appState = interpretAppState(command)(appState);
-  });
+  initialize();
 
-},{"./interpret":3,"./interpret2":4,"./interpretAppState.js":5,"./interpretUi.js":6,"./interpreter":7}],3:[function(require,module,exports){
+  var appState = {
+    history: {
+      past: [],
+      future: [],
+      cache: [],
+      display: [],
+    },
+    cursor: {
+      pre: '',
+      post: ''
+    }
+  };
+
+  document.addEventListener(
+    'keypress',
+    function (event) {
+      var command;
+      switch (event.keyCode) {
+        case 13: // enter
+          command = interpreter.submit3(appState, transform);
+          break;
+        case 8: // backspace
+          event.preventDefault();
+          command = interpreter.deleteLeftChar3(appState);
+          break;
+        case 37: // left;
+          event.preventDefault();
+          command = interpreter.moveCursorLeft3(appState);
+          break;
+        case 39: // right;
+          event.preventDefault();
+          command = interpreter.moveCursorRight3(appState);
+          break;
+        case 38: // up;
+          event.preventDefault();
+          command = interpreter.rewindHistory3(appState);
+          break;
+        case 40: // down;
+          event.preventDefault();
+          command = interpreter.fastForwardHistory3(appState);
+          break;
+        case 46: // delete
+          event.preventDefault();
+          command = interpreter.deleteRightChar3(appState);
+          break;
+        case 0:
+          command = interpreter.addChar3(appState, String.fromCharCode(event.charCode));
+          break;
+        default:
+          command = interpreter.addChar3(appState, String.fromCharCode(event.charCode));
+          break;
+      }
+      var changes = translate(interpretUi(command));
+      for (var index in changes) {
+        modifyElement(
+          document.getElementById('console'),
+          changes[index]);
+      }
+      appState = interpretAppState(command)(appState);
+    });
+}
+
+module.exports = _initialize;
+
+},{"./interpret":4,"./interpret2":5,"./interpretAppState.js":6,"./interpretUi.js":7,"./interpreter":8}],4:[function(require,module,exports){
 var interpreter = require('./interpreter');
 var elements = require('./elements');
 
@@ -450,7 +469,7 @@ module.exports = {
   modifyElement: modifyElement,
 };
 
-},{"./elements":1,"./interpreter":7}],4:[function(require,module,exports){
+},{"./elements":2,"./interpreter":8}],5:[function(require,module,exports){
 var modifyElement = require('./interpret').modifyElement;
 var elements = require('./elements');
 
@@ -617,7 +636,7 @@ module.exports = {
   translate: translate
 };
 
-},{"./elements":1,"./interpret":3}],5:[function(require,module,exports){
+},{"./elements":2,"./interpret":4}],6:[function(require,module,exports){
 function interpretAppState(command) {
   switch (command.commandType) {
     case 'addChar':
@@ -875,7 +894,7 @@ function interpretAppState(command) {
 
 module.exports = interpretAppState;
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 function interpretUi(command) {
   switch (command.commandType) {
     case 'addChar':
@@ -967,7 +986,7 @@ function interpretUi(command) {
 
 module.exports = interpretUi;
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 elements = require('./elements.js');
 var createPrompt = elements.createPrompt;
 var createOldPrompt = elements.createOldPrompt;
@@ -1096,4 +1115,4 @@ var interpreter = {
 
 module.exports = interpreter;
 
-},{"./elements.js":1}]},{},[2]);
+},{"./elements.js":2}]},{},[1]);
