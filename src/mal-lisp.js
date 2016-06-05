@@ -1,34 +1,36 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ReactiveAspen = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
-var environment, repl, serialize, standard, _process, _repl;
+var getEnvironment, initializeRepl, serialize, _process;
 
-environment = _dereq_('./environment').environment;
+getEnvironment = _dereq_('./environment');
 
 _process = _dereq_('./process');
 
 serialize = _dereq_('./serialize');
 
-repl = function(envs, jsString) {
-  var e;
-  try {
-    return serialize(_process(envs)(jsString));
-  } catch (_error) {
-    e = _error;
-    return "repl error: (" + (serialize(e)) + " + )";
-  }
+initializeRepl = function(display) {
+  var environment, repl, standard, _repl;
+  environment = getEnvironment(display).environment;
+  repl = function(envs, jsString) {
+    var e;
+    try {
+      return serialize(_process(envs)(jsString));
+    } catch (_error) {
+      e = _error;
+      return "repl error: (" + (serialize(e)) + " + )";
+    }
+  };
+  _repl = function(jsString) {
+    return repl([environment], jsString);
+  };
+  standard = "(do\n  (def! fix*\n    (fn* (f)\n      ( (fn* (x) (f (fn* (& ys) (apply (x x) ys))))\n        (fn* (x) (f (fn* (& ys) (apply (x x) ys)))))))\n\n  (def! y* (macro* (f x) `(~f (y* ~f) ~x)))\n\n  (def! memfix*\n    (fn* (f)\n      (let* (cache {})\n        (\n          (fn* (x cache)\n            (f\n              (fn* (z)\n                (if (contains? cache z)\n                  (get cache z)\n                  (let* (result ((fn* (y) ((x x cache) y)) z))\n                    (do (set! cache z result) result))))\n              cache))\n          (fn* (x cache)\n            (f\n              (fn* (z)\n                (if (contains? cache z)\n                  (get cache z)\n                  (let* (result ((fn* (y) ((x x cache) y)) z))\n                    (do (set! cache z result) result))))\n              cache))\n          cache))))\n\n  (def! 1st car)\n  (def! 2nd (fn* (xs) (nth 1 xs)))\n  (def! 3rd (fn* (xs) (nth 2 xs)))\n\n  (def! swap! (macro* (atom & xs)\n    (if (empty? xs)\n      atom\n      `(let* (-atom- ~atom)\n        (do\n          (reset! -atom- (~(car xs) (deref -atom-) ~@(cdr xs)))\n          (deref -atom-))))))\n\n  (def! *gensym-counter* (atom 0))\n\n  (def! gensym (fn* ()\n    (symbol (str \"G__\" (swap! *gensym-counter* incr)))))\n\n  (def! or (macro* (& xs)\n    (if (empty? xs)\n      false\n      (let* (-query- (gensym))\n        `(let* (~-query- ~(car xs))\n          (if ~-query- \n            ~-query-\n            (or ~@(cdr xs))))))))\n\n  (def! and (macro* (& xs)\n    (if (empty? xs)\n      true\n      (let* (-query- (gensym))\n        `(let* (~-query- ~(car xs))\n          (if ~-query-\n            (and ~@(cdr xs))\n            false))))))\n\n  (def! cond (macro* (& xs)\n    (if (empty? xs)\n      nil\n      (if (empty? (cdr xs))\n        (throw \"`cond` requires an even number of forms.\")\n        (let* (-query- (gensym))\n          `(let* (~-query- ~(car xs))\n            (if ~-query-\n              ~(2nd xs)\n              (cond ~@(cdr (cdr xs))))))))))\n\n  (def! loop (macro* (form0 form1)\n    `(let* (loop (memfix* (fn* (loop) (fn* (~(1st form0)) ~form1)))) (loop ~(2nd form0)))))\n\n  (def! -> (macro* (& xs)\n    (if (empty? xs)\n      nil\n      (let* (x  (car xs)\n            xs (cdr xs))\n        (if (empty? xs)\n          x\n          (let* (form  (car xs)\n                forms (cdr xs))\n            (if (empty? forms)\n              (if (list? form)\n                (if (= (symbol \"fn*\") (car form))\n                  `(~form ~x)\n                  `(~(car form) ~x ~@(cdr form)))\n                (list form x))\n              `(-> (-> ~x ~form) ~@forms))))))))\n\n  (def! ->> (macro* (& xs)\n    (if (empty? xs)\n      nil\n      (let* (x  (car xs)\n            xs (cdr xs))\n        (if (empty? xs)\n          x\n          (let* (form  (car xs)\n                forms (cdr xs))\n            (if (empty? forms)\n              (if (list? form)\n                (if (= (symbol \"fn*\") (car form))\n                  `(~form ~x)\n                  `(~@form  ~x))\n                (list form x))\n              `(->> (->> ~x ~form) ~@forms))))))))\n\n  (def! ->* (macro* (& xs) `(fn* (-x-) (-> -x- ~@xs))))\n\n  (def! ->>* (macro* (& xs) `(fn* (-x-) (->> -x- ~@xs))))\n\n  (def! not (fn* (x) (if x false true)))\n  (def! incr  (->* (+ 1)))\n  (def! decr  (->* (- 1)))\n  (def! zero? (->* (= 0)))\n\n  (def! identity (fn* (x) x))\n\n  (def! constant-fn (fn* (x) (fn* (y) x)))\n\n  (def! call-on (fn* (& xs) (fn* (fn) (apply fn xs))))\n\n  (def! reduce\n    (fn* (seed f xs)\n      (if (empty? xs)\n        seed\n        (reduce (f seed (car xs)) f (cdr xs)))))\n\n  (def! every?\n    (fn* (pred xs)\n      (if (empty? xs)\n        true\n        (if (pred (car xs))\n          (every? pred (cdr xs))\n          false))))\n\n  (def! some?\n    (fn* (pred xs)\n      (if (empty? xs)\n        false\n        (if (pred (car xs))\n          true\n          (some? pred (cdr xs))))))\n\n  (def! letmemrec* (macro* (alias expr)\n    `(let* (~(car alias) (memfix* (fn* (~(car alias)) ~(2nd alias)))) ~expr)))\n\n  (def! skip (fn* (nbr xs)\n    (letrec* (-skip- (fn* (ys)\n      (let* (nbr (car ys)\n            xs (2nd ys))\n        (cond\n          (= 0 nbr) xs\n          (= 1 nbr) (cdr xs)\n          \"default\" (-skip- (list (decr nbr) (cdr xs)))))))\n      (-skip- (list nbr xs)))))\n\n  (def! . (macro* (x key & xs)\n    `((get ~x ~key) ~@xs)))\n\n  (def! .. (fn* (lo hi)\n    (letrec* (-..- (fn* (ys)\n      (let* (lo     (1st ys)\n            hi     (2nd ys)\n            -list- (3rd ys))\n        (if (= lo hi)\n          (cons hi -list-)\n          (-..- (list lo (decr hi) (cons hi -list-)))))))\n      (-..- (list lo hi '())))))\n)";
+  _repl(standard);
+  return _repl;
 };
 
-_repl = function(jsString) {
-  return repl([environment], jsString);
-};
-
-standard = "(do\n\n  (def! fix*\n    (fn* (f)\n      ( (fn* (x) (f (fn* (& ys) (apply (x x) ys))))\n        (fn* (x) (f (fn* (& ys) (apply (x x) ys)))))))\n\n  (def! y* (macro* (f x) `(~f (y* ~f) ~x)))\n\n  (def! memfix*\n    (fn* (f)\n      (let* (cache {})\n        (\n          (fn* (x cache)\n            (f\n              (fn* (z)\n                (if (contains? cache z)\n                  (get cache z)\n                  (let* (result ((fn* (y) ((x x cache) y)) z))\n                    (do (set! cache z result) result))))\n              cache))\n          (fn* (x cache)\n            (f\n              (fn* (z)\n                (if (contains? cache z)\n                  (get cache z)\n                  (let* (result ((fn* (y) ((x x cache) y)) z))\n                    (do (set! cache z result) result))))\n              cache))\n          cache))))\n\n  (def! 1st car)\n  (def! 2nd (fn* (xs) (nth 1 xs)))\n  (def! 3rd (fn* (xs) (nth 2 xs)))\n\n  (def! swap! (macro* (atom & xs)\n    (if (empty? xs)\n      atom\n      `(let* (-atom- ~atom)\n        (do\n          (reset! -atom- (~(car xs) (deref -atom-) ~@(cdr xs)))\n          (deref -atom-))))))\n\n  (def! *gensym-counter* (atom 0))\n\n  (def! gensym (fn* ()\n    (symbol (str \"G__\" (swap! *gensym-counter* incr)))))\n\n  (def! or (macro* (& xs)\n    (if (empty? xs)\n      false\n      (let* (-query- (gensym))\n        `(let* (~-query- ~(car xs))\n          (if ~-query- \n            ~-query-\n            (or ~@(cdr xs))))))))\n\n  (def! and (macro* (& xs)\n    (if (empty? xs)\n      true\n      (let* (-query- (gensym))\n        `(let* (~-query- ~(car xs))\n          (if ~-query-\n            (and ~@(cdr xs))\n            false))))))\n\n  (def! cond (macro* (& xs)\n    (if (empty? xs)\n      nil\n      (if (empty? (cdr xs))\n        (throw \"`cond` requires an even number of forms.\")\n        (let* (-query- (gensym))\n          `(let* (~-query- ~(car xs))\n            (if ~-query-\n              ~(2nd xs)\n              (cond ~@(cdr (cdr xs))))))))))\n\n  (def! loop (macro* (form0 form1)\n    `(let* (loop (memfix* (fn* (loop) (fn* (~(1st form0)) ~form1)))) (loop ~(2nd form0)))))\n\n  (def! -> (macro* (& xs)\n    (if (empty? xs)\n      nil\n      (let* (x  (car xs)\n             xs (cdr xs))\n        (if (empty? xs)\n          x\n          (let* (form  (car xs)\n                 forms (cdr xs))\n            (if (empty? forms)\n              (if (list? form)\n                (if (= (symbol \"fn*\") (car form))\n                  `(~form ~x)\n                  `(~(car form) ~x ~@(cdr form)))\n                (list form x))\n              `(-> (-> ~x ~form) ~@forms))))))))\n\n  (def! ->> (macro* (& xs)\n    (if (empty? xs)\n      nil\n      (let* (x  (car xs)\n             xs (cdr xs))\n        (if (empty? xs)\n          x\n          (let* (form  (car xs)\n                 forms (cdr xs))\n            (if (empty? forms)\n              (if (list? form)\n                (if (= (symbol \"fn*\") (car form))\n                  `(~form ~x)\n                  `(~@form  ~x))\n                (list form x))\n              `(->> (->> ~x ~form) ~@forms))))))))\n\n  (def! ->* (macro* (& xs) `(fn* (-x-) (-> -x- ~@xs))))\n\n  (def! ->>* (macro* (& xs) `(fn* (-x-) (->> -x- ~@xs))))\n\n  (def! not (fn* (x) (if x false true)))\n  (def! incr  (->* (+ 1)))\n  (def! decr  (->* (- 1)))\n  (def! zero? (->* (= 0)))\n\n  (def! identity (fn* (x) x))\n\n  (def! constant-fn (fn* (x) (fn* (y) x)))\n\n  (def! call-on (fn* (& xs) (fn* (fn) (apply fn xs))))\n\n  (def! reduce\n    (fn* (seed f xs)\n      (if (empty? xs)\n        seed\n        (reduce (f seed (car xs)) f (cdr xs)))))\n\n  (def! every?\n    (fn* (pred xs)\n      (if (empty? xs)\n        true\n        (if (pred (car xs))\n          (every? pred (cdr xs))\n          false))))\n\n  (def! some?\n    (fn* (pred xs)\n      (if (empty? xs)\n        false\n        (if (pred (car xs))\n          true\n          (some? pred (cdr xs))))))\n\n  (def! letmemrec* (macro* (alias expr)\n    `(let* (~(car alias) (memfix* (fn* (~(car alias)) ~(2nd alias)))) ~expr)))\n\n  (def! skip (fn* (nbr xs)\n    (letrec* (-skip- (fn* (ys)\n      (let* (nbr (car ys)\n             xs (2nd ys))\n        (cond\n          (= 0 nbr) xs\n          (= 1 nbr) (cdr xs)\n          \"default\" (-skip- (list (decr nbr) (cdr xs)))))))\n      (-skip- (list nbr xs)))))\n\n  (def! . (macro* (x key & xs)\n    `((get ~x ~key) ~@xs)))\n\n  (def! .. (fn* (lo hi)\n    (letrec* (-..- (fn* (ys)\n      (let* (lo     (1st ys)\n             hi     (2nd ys)\n             -list- (3rd ys))\n        (if (= lo hi)\n          (cons hi -list-)\n          (-..- (list lo (decr hi) (cons hi -list-)))))))\n      (-..- (list lo hi '())))))\n\n)";
-
-_repl(standard);
-
-module.exports = _repl;
+module.exports = initializeRepl;
 
 
-},{"./environment":5,"./process":17,"./serialize":18}],2:[function(_dereq_,module,exports){
+},{"./environment":4,"./process":16,"./serialize":17}],2:[function(_dereq_,module,exports){
 var comment;
 
 comment = {};
@@ -37,23 +39,6 @@ module.exports = comment;
 
 
 },{}],3:[function(_dereq_,module,exports){
-var commentSignal, display, log;
-
-commentSignal = _dereq_('./commentSignal');
-
-display = function(serializedMalValue) {
-  if (serializedMalValue === commentSignal) {
-    return "\n";
-  }
-  return log(serializedMalValue);
-};
-
-log = console.log;
-
-module.exports = display;
-
-
-},{"./commentSignal":2}],4:[function(_dereq_,module,exports){
 var addEnv, getLast, lookup, set, setMainEnv, unset, unsetMainEnv;
 
 addEnv = function(envStack, newEnv) {
@@ -109,9 +94,9 @@ module.exports = {
 };
 
 
-},{}],5:[function(_dereq_,module,exports){
+},{}],4:[function(_dereq_,module,exports){
 (function (process){
-var add, append, apply, areEqual, assoc, atom, atom_question_, boolean_question_, call, car, cdr, circumpendQuotes, concat, cons, contains_question_, coreFn_question_, count, createMalAtom, createMalBoolean, createMalCoreFunction, createMalIdentifier, createMalIgnore, createMalIndex, createMalList, createMalNumber, createMalString, createMalSymbol, createPredicate, deref, display, dissoc, divide, drop, empty_question_, environment, equal_question_, evalWithBareEnv, evalWithEnv, evaluate, exponentiate, extractJsValue, false_question_, first, fix, fromArray, fromJsObject, fromMalIndex, function_question_, functionsOnJsValues, functionsOnMalValues, get, greaterThan, greaterThanOrEqual, ignoreIfTrue, ignoreUnlessTrue, ignore_bang_, interpret, jsNaN_question_, jsNumber_question_, jsString_question_, keys, last, lessThan, lessThanOrEqual, lift, list, list_question_, load, loadWithBareEnv, loadWithEnv, macro_question_, malAtom_question_, malBoolean_question_, malCoreFunction_question_, malFalse, malFalse_question_, malIgnore, malIndex_question_, malList_question_, malMacro_question_, malNil, malNil_question_, malNumber_question_, malReduce, malString_question_, malSymbol_question_, malTrue, malTrue_question_, malUserFunction_question_, map, meta, mod, multiply, negate, next, nil_question_, nth, number_question_, parseNumber, prStr, prepend, println, prn, read, recurse, reduce, reset, rest, reverse, serialize, set, setCoreFnsOnJsValues_bang_, setCoreFnsOnMalValues_bang_, setMalValue, slurp, str, string_question_, stripQuotes, subtract, symbol, symbol_question_, take, time_hyphen_ms, toArray, toPartialArray, true_question_, typeOf, userFn_question_, vals, withMeta, write, __evaluate__, __evaluate__2, _car, _cdr, _concat, _drop, _empty_question_, _environment_, _evaluate, _evaluateString, _evaluate_, _index, _interpret, _last, _length, _not, _prStr, _process_, _quit_, _read, _ref, _reverse, _take, _throw,
+var car, cdr, circumpendQuotes, concat, createMalAtom, createMalBoolean, createMalCoreFunction, createMalIdentifier, createMalIgnore, createMalIndex, createMalList, createMalNumber, createMalString, createMalSymbol, drop, empty_question_, equal_question_, evaluate, extractJsValue, fromArray, fromJsObject, fromMalIndex, getEnvironment, interpret, jsNaN_question_, jsNumber_question_, jsString_question_, last, malAtom_question_, malBoolean_question_, malCoreFunction_question_, malFalse, malFalse_question_, malIgnore, malIndex_question_, malList_question_, malMacro_question_, malNil, malNil_question_, malNumber_question_, malString_question_, malSymbol_question_, malTrue, malTrue_question_, malUserFunction_question_, next, recurse, reduce, reverse, serialize, take, toArray, toPartialArray, _process_,
   __hasProp = {}.hasOwnProperty,
   __slice = [].slice;
 
@@ -142,8 +127,6 @@ createMalNumber = _dereq_('./mal-type-utilities').createMalNumber;
 createMalString = _dereq_('./mal-type-utilities').createMalString;
 
 createMalSymbol = _dereq_('./mal-type-utilities').createMalSymbol;
-
-display = _dereq_('./display');
 
 drop = _dereq_('./linked-list').drop;
 
@@ -223,754 +206,670 @@ toArray = _dereq_('./linked-list').toArray;
 
 toPartialArray = _dereq_('./linked-list').toPartialArray;
 
-lift = function(fnOnJsValues) {
-  return function(malValueList) {
-    return fnOnJsValues.apply(null, (toArray(malValueList)).map(extractJsValue));
+getEnvironment = function(display) {
+  var add, append, apply, areEqual, assoc, atom, atom_question_, boolean_question_, call, cons, contains_question_, coreFn_question_, count, createPredicate, deref, dissoc, divide, environment, evalWithBareEnv, evalWithEnv, exponentiate, false_question_, first, fix, function_question_, functionsOnJsValues, functionsOnMalValues, get, greaterThan, greaterThanOrEqual, ignoreIfTrue, ignoreUnlessTrue, ignore_bang_, keys, lessThan, lessThanOrEqual, lift, list, list_question_, load, loadWithBareEnv, loadWithEnv, macro_question_, malReduce, map, meta, mod, multiply, negate, nil_question_, nth, number_question_, parseNumber, prStr, prepend, println, prn, read, reset, rest, set, setCoreFnsOnJsValues_bang_, setCoreFnsOnMalValues_bang_, setMalValue, slurp, str, string_question_, stripQuotes, subtract, symbol, symbol_question_, time_hyphen_ms, true_question_, typeOf, userFn_question_, vals, withMeta, write, __evaluate__, __evaluate__2, _car, _cdr, _concat, _drop, _empty_question_, _environment_, _evaluate, _evaluateString, _evaluate_, _index, _interpret, _last, _length, _not, _prStr, _quit_, _read, _ref, _reverse, _take, _throw;
+  lift = function(fnOnJsValues) {
+    return function(malValueList) {
+      return fnOnJsValues.apply(null, (toArray(malValueList)).map(extractJsValue));
+    };
   };
-};
-
-setCoreFnsOnJsValues_bang_ = function(env, fns) {
-  var fn, fnName, _results;
-  _results = [];
-  for (fnName in fns) {
-    if (!__hasProp.call(fns, fnName)) continue;
-    fn = fns[fnName];
-    _results.push(env[fnName] = createMalCoreFunction(lift(fn)));
-  }
-  return _results;
-};
-
-add = function() {
-  var nbrs;
-  nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-  return createMalNumber(nbrs.reduce(function(x, nbr) {
-    return x += nbr;
-  }));
-};
-
-assoc = function() {
-  var args, copy, i, index, k, key, value, _i, _len;
-  index = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-  copy = {};
-  for (key in index) {
-    if (!__hasProp.call(index, key)) continue;
-    value = index[key];
-    copy[key] = value;
-  }
-  for (i = _i = 0, _len = args.length; _i < _len; i = ++_i) {
-    k = args[i];
-    if (i % 2 === 0) {
-      copy[k] = args[i + 1];
+  setCoreFnsOnJsValues_bang_ = function(env, fns) {
+    var fn, fnName, _results;
+    _results = [];
+    for (fnName in fns) {
+      if (!__hasProp.call(fns, fnName)) continue;
+      fn = fns[fnName];
+      _results.push(env[fnName] = createMalCoreFunction(lift(fn)));
     }
-  }
-  return createMalIndex(copy);
-};
-
-contains_question_ = function(index, key) {
-  return createMalBoolean(key in index);
-};
-
-dissoc = function() {
-  var copy, index, key, keys, value, _i, _len;
-  index = arguments[0], keys = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-  copy = {};
-  for (key in index) {
-    if (!__hasProp.call(index, key)) continue;
-    value = index[key];
-    copy[key] = value;
-  }
-  for (_i = 0, _len = keys.length; _i < _len; _i++) {
-    key = keys[_i];
-    delete copy[key];
-  }
-  return createMalIndex(copy);
-};
-
-divide = function() {
-  var nbrs;
-  nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-  return createMalNumber(nbrs.reduce(function(x, nbr) {
-    return x /= nbr;
-  }));
-};
-
-exponentiate = function() {
-  var nbrs;
-  nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-  return createMalNumber(nbrs.reduce(function(x, nbr) {
-    return Math.pow(x, nbr);
-  }));
-};
-
-get = function(jsIndex, jsKey) {
-  return jsIndex[jsKey];
-};
-
-greaterThanOrEqual = function() {
-  var nbrs;
-  nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-  return createMalBoolean(nbrs[0] >= nbrs[1]);
-};
-
-greaterThan = function() {
-  var nbrs;
-  nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-  return createMalBoolean(nbrs[0] > nbrs[1]);
-};
-
-_index = function() {
-  var args, i, index, k, _i, _len;
-  args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-  index = {};
-  for (i = _i = 0, _len = args.length; _i < _len; i = ++_i) {
-    k = args[i];
-    if (i % 2 === 0) {
-      index[k] = args[i + 1];
+    return _results;
+  };
+  add = function() {
+    var nbrs;
+    nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return createMalNumber(nbrs.reduce(function(x, nbr) {
+      return x += nbr;
+    }));
+  };
+  assoc = function() {
+    var args, copy, i, index, k, key, value, _i, _len;
+    index = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    copy = {};
+    for (key in index) {
+      if (!__hasProp.call(index, key)) continue;
+      value = index[key];
+      copy[key] = value;
     }
-  }
-  return createMalIndex(index);
-};
-
-keys = function(index) {
-  var jsNbr, key, value, _keys;
-  _keys = [];
-  for (key in index) {
-    if (!__hasProp.call(index, key)) continue;
-    value = index[key];
-    _keys.push(jsNaN_question_(jsNbr = parseFloat(key, 10)) ? (key[0] === ':' ? createMalIdentifier : createMalString)(key) : createMalNumber(jsNbr));
-  }
-  return fromArray(_keys);
-};
-
-_length = function(jsVal) {
-  if (!jsString_question_(jsVal)) {
-    return malNil;
-  }
-  return createMalNumber(jsVal.length - 2);
-};
-
-lessThan = function() {
-  var nbrs;
-  nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-  return createMalBoolean(nbrs[0] < nbrs[1]);
-};
-
-lessThanOrEqual = function() {
-  var nbrs;
-  nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-  return createMalBoolean(nbrs[0] <= nbrs[1]);
-};
-
-mod = function(nbr0, nbr1) {
-  return createMalNumber(nbr0 % nbr1);
-};
-
-multiply = function() {
-  var nbrs;
-  nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-  return createMalNumber(nbrs.reduce(function(x, nbr) {
-    return x *= nbr;
-  }));
-};
-
-negate = function(nbr) {
-  return createMalNumber(-1 * nbr);
-};
-
-parseNumber = function(jsVal) {
-  var jsNbr;
-  if (jsNumber_question_(jsVal)) {
-    return jsVal;
-  }
-  if (!jsString_question_(jsVal)) {
-    return malNil;
-  }
-  jsNbr = parseFloat(stripQuotes(jsVal), 10);
-  if (jsNaN_question_(jsNbr)) {
-    return malNil;
-  } else {
-    return createMalNumber(jsNbr);
-  }
-};
-
-subtract = function() {
-  var nbrs;
-  nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-  return createMalNumber(nbrs.reduce(function(x, nbr) {
-    return x -= nbr;
-  }));
-};
-
-vals = function(index) {
-  var key, value, values;
-  values = [];
-  for (key in index) {
-    if (!__hasProp.call(index, key)) continue;
-    value = index[key];
-    values.push(value);
-  }
-  return fromArray(values);
-};
-
-functionsOnJsValues = {
-  '+': add,
-  'assoc': assoc,
-  'contains?': contains_question_,
-  'dissoc': dissoc,
-  '/': divide,
-  '**': exponentiate,
-  'get': get,
-  '>': greaterThan,
-  '>=': greaterThanOrEqual,
-  'index': _index,
-  'keys': keys,
-  'length': _length,
-  '<': lessThan,
-  '<=': lessThanOrEqual,
-  '%': mod,
-  '*': multiply,
-  'negate': negate,
-  'parse-number': parseNumber,
-  '-': subtract,
-  'vals': vals
-};
-
-createPredicate = function(pred) {
-  return function(jsList) {
+    for (i = _i = 0, _len = args.length; _i < _len; i = ++_i) {
+      k = args[i];
+      if (i % 2 === 0) {
+        copy[k] = args[i + 1];
+      }
+    }
+    return createMalIndex(copy);
+  };
+  contains_question_ = function(index, key) {
+    return createMalBoolean(key in index);
+  };
+  dissoc = function() {
+    var copy, index, key, keys, value, _i, _len;
+    index = arguments[0], keys = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    copy = {};
+    for (key in index) {
+      if (!__hasProp.call(index, key)) continue;
+      value = index[key];
+      copy[key] = value;
+    }
+    for (_i = 0, _len = keys.length; _i < _len; _i++) {
+      key = keys[_i];
+      delete copy[key];
+    }
+    return createMalIndex(copy);
+  };
+  divide = function() {
+    var nbrs;
+    nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return createMalNumber(nbrs.reduce(function(x, nbr) {
+      return x /= nbr;
+    }));
+  };
+  exponentiate = function() {
+    var nbrs;
+    nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return createMalNumber(nbrs.reduce(function(x, nbr) {
+      return Math.pow(x, nbr);
+    }));
+  };
+  get = function(jsIndex, jsKey) {
+    return jsIndex[jsKey];
+  };
+  greaterThanOrEqual = function() {
+    var nbrs;
+    nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return createMalBoolean(nbrs[0] >= nbrs[1]);
+  };
+  greaterThan = function() {
+    var nbrs;
+    nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return createMalBoolean(nbrs[0] > nbrs[1]);
+  };
+  _index = function() {
+    var args, i, index, k, _i, _len;
+    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    index = {};
+    for (i = _i = 0, _len = args.length; _i < _len; i = ++_i) {
+      k = args[i];
+      if (i % 2 === 0) {
+        index[k] = args[i + 1];
+      }
+    }
+    return createMalIndex(index);
+  };
+  keys = function(index) {
+    var jsNbr, key, value, _keys;
+    _keys = [];
+    for (key in index) {
+      if (!__hasProp.call(index, key)) continue;
+      value = index[key];
+      _keys.push(jsNaN_question_(jsNbr = parseFloat(key, 10)) ? (key[0] === ':' ? createMalIdentifier : createMalString)(key) : createMalNumber(jsNbr));
+    }
+    return fromArray(_keys);
+  };
+  _length = function(jsVal) {
+    if (!jsString_question_(jsVal)) {
+      return malNil;
+    }
+    return createMalNumber(jsVal.length - 2);
+  };
+  lessThan = function() {
+    var nbrs;
+    nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return createMalBoolean(nbrs[0] < nbrs[1]);
+  };
+  lessThanOrEqual = function() {
+    var nbrs;
+    nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return createMalBoolean(nbrs[0] <= nbrs[1]);
+  };
+  mod = function(nbr0, nbr1) {
+    return createMalNumber(nbr0 % nbr1);
+  };
+  multiply = function() {
+    var nbrs;
+    nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return createMalNumber(nbrs.reduce(function(x, nbr) {
+      return x *= nbr;
+    }));
+  };
+  negate = function(nbr) {
+    return createMalNumber(-1 * nbr);
+  };
+  parseNumber = function(jsVal) {
+    var jsNbr;
+    if (jsNumber_question_(jsVal)) {
+      return jsVal;
+    }
+    if (!jsString_question_(jsVal)) {
+      return malNil;
+    }
+    jsNbr = parseFloat(stripQuotes(jsVal), 10);
+    if (jsNaN_question_(jsNbr)) {
+      return malNil;
+    } else {
+      return createMalNumber(jsNbr);
+    }
+  };
+  subtract = function() {
+    var nbrs;
+    nbrs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return createMalNumber(nbrs.reduce(function(x, nbr) {
+      return x -= nbr;
+    }));
+  };
+  vals = function(index) {
+    var key, value, values;
+    values = [];
+    for (key in index) {
+      if (!__hasProp.call(index, key)) continue;
+      value = index[key];
+      values.push(value);
+    }
+    return fromArray(values);
+  };
+  functionsOnJsValues = {
+    '+': add,
+    'assoc': assoc,
+    'contains?': contains_question_,
+    'dissoc': dissoc,
+    '/': divide,
+    '**': exponentiate,
+    'get': get,
+    '>': greaterThan,
+    '>=': greaterThanOrEqual,
+    'index': _index,
+    'keys': keys,
+    'length': _length,
+    '<': lessThan,
+    '<=': lessThanOrEqual,
+    '%': mod,
+    '*': multiply,
+    'negate': negate,
+    'parse-number': parseNumber,
+    '-': subtract,
+    'vals': vals
+  };
+  createPredicate = function(pred) {
+    return function(jsList) {
+      var malValue;
+      malValue = jsList.value;
+      return createMalBoolean(pred(malValue));
+    };
+  };
+  __evaluate__ = function(malVal) {
+    return evaluate([environment])(malVal);
+  };
+  __evaluate__2 = function(malVal) {
+    return __evaluate__(__evaluate__(malVal));
+  };
+  _evaluate_ = function(jsString) {
+    return _process_([environment])(jsString);
+  };
+  _evaluateString = function(malArgs) {
+    return _evaluate_(stripQuotes(extractJsValue(car(malArgs))));
+  };
+  _evaluate = function(malArgs) {
+    return evaluate([environment])(car(malArgs));
+  };
+  _prStr = function(malArgs, printReadably_question_) {
+    return (toArray(malArgs)).map(function(malArg) {
+      return serialize(malArg, printReadably_question_);
+    });
+  };
+  prStr = function(malArgs) {
+    return createMalString('"' + (_prStr(malArgs, true)).join('') + '"');
+  };
+  str = function(malArgs) {
+    return createMalString('"' + (_prStr(malArgs, false)).join('') + '"');
+  };
+  prn = function(display) {
+    return function(malArgs) {
+      display(_prStr(malArgs, true).join(''));
+      return malNil;
+    };
+  };
+  println = function(display) {
+    return function(malArgs) {
+      display(_prStr(malArgs, false).join(''));
+      return malNil;
+    };
+  };
+  _read = function(malArgs) {
+    var jsFileName;
+    jsFileName = stripQuotes(extractJsValue(car(malArgs)));
+    return _dereq_('fs').readFileSync(jsFileName).toString();
+  };
+  setCoreFnsOnMalValues_bang_ = function(env, fns) {
+    var fn, fnName, _results;
+    _results = [];
+    for (fnName in fns) {
+      if (!__hasProp.call(fns, fnName)) continue;
+      fn = fns[fnName];
+      _results.push(env[fnName] = createMalCoreFunction(fn));
+    }
+    return _results;
+  };
+  setMalValue = function(malAtom, malValue) {
+    malAtom.malValue = malValue;
+    return malAtom;
+  };
+  stripQuotes = function(jsString) {
+    return jsString.slice(1, -1);
+  };
+  append = function(malArgs) {
+    var malList, malValues, _ref;
+    _ref = toArray(malArgs), malList = _ref[0], malValues = 2 <= _ref.length ? __slice.call(_ref, 1) : [];
+    return concat(malList, fromArray(malValues));
+  };
+  apply = function(malArgs) {
+    var malArgList, malFn, _ref;
+    _ref = toArray(malArgs), malFn = _ref[0], malArgList = _ref[1];
+    return evaluate([])(createMalList(malFn, malArgList));
+  };
+  areEqual = function(malArgs) {
+    var malValue0, malValue1, _areEqual, _ref;
+    _ref = toPartialArray(2, malArgs), malValue0 = _ref[0], malValue1 = _ref[1];
+    _areEqual = function(malValue0, malValue1) {
+      var jsIndex0, jsIndex1;
+      if (malList_question_(malValue0) && malList_question_(malValue1)) {
+        return equal_question_(malValue0, malValue1, _areEqual);
+      } else if (malIndex_question_(malValue0) && malIndex_question_(malValue1)) {
+        jsIndex0 = malValue0.jsValue;
+        jsIndex1 = malValue1.jsValue;
+        return (_areEqual(keys(jsIndex0), keys(jsIndex1))) && (_areEqual(vals(jsIndex0), vals(jsIndex1)));
+      } else {
+        return malValue0.jsValue === malValue1.jsValue;
+      }
+    };
+    return createMalBoolean(_areEqual(malValue0, malValue1));
+  };
+  atom = function(malArgs) {
+    return createMalAtom(car(malArgs));
+  };
+  call = function(malArgs) {
+    return evaluate([])(malArgs);
+  };
+  _car = function(malArgs) {
+    var arg;
+    arg = car(malArgs);
+    if (malList_question_(arg)) {
+      return car(arg);
+    } else {
+      return malNil;
+    }
+  };
+  _cdr = function(malArgs) {
+    var arg;
+    arg = car(malArgs);
+    if (malList_question_(arg)) {
+      return cdr(arg);
+    } else {
+      return malNil;
+    }
+  };
+  _concat = function(malArgs) {
+    var malLists;
+    malLists = toArray(malArgs);
+    return concat.apply(null, malLists);
+  };
+  cons = function(malArgs) {
+    return createMalList(car(malArgs), next(malArgs));
+  };
+  count = function(malArgs) {
+    var malList, _reduce;
+    malList = car(malArgs);
+    if (!malList_question_(malList)) {
+      return malNil;
+    }
+    _reduce = function(sum, value) {
+      return sum + 1;
+    };
+    return createMalNumber(reduce(0, _reduce, car(malArgs)));
+  };
+  deref = function(malArgs) {
+    return (car(malArgs)).malValue;
+  };
+  _drop = function(malArgs) {
+    var malList, malNumber, _ref;
+    _ref = toPartialArray(2, malArgs), malNumber = _ref[0], malList = _ref[1];
+    return drop(extractJsValue(malNumber), malList);
+  };
+  _empty_question_ = function(malArgs) {
+    if (empty_question_(malArgs)) {
+      return malFalse;
+    } else {
+      if (empty_question_(car(malArgs))) {
+        return malTrue;
+      } else {
+        return malFalse;
+      }
+    }
+  };
+  evalWithBareEnv = function(malArgs) {
+    var expr, localEnv, _ref;
+    _ref = toPartialArray(2, malArgs), expr = _ref[0], localEnv = _ref[1];
+    return evaluate([fromMalIndex(localEnv)])(expr);
+  };
+  evalWithEnv = function(malArgs) {
+    var expr, localEnv, _ref;
+    _ref = toPartialArray(2, malArgs), expr = _ref[0], localEnv = _ref[1];
+    return evaluate([fromMalIndex(localEnv), environment])(expr);
+  };
+  first = function(malArgs) {
+    return car(car(malArgs));
+  };
+  fix = function(malArgs) {
+    var jsFnX, malFnF, malFnX;
+    malFnF = car(malArgs);
+    jsFnX = function(malArgs1) {
+      var jsFnY, malFnX, malFnY;
+      malFnX = car(malArgs1);
+      jsFnY = function(malArgs2) {
+        var malValY;
+        malValY = car(malArgs2);
+        return __evaluate__2(createMalList(createMalList(malFnX, createMalList(malFnX)), createMalList(malValY)));
+      };
+      malFnY = createMalCoreFunction(jsFnY);
+      return __evaluate__2(createMalList(malFnF, createMalList(malFnY)));
+    };
+    malFnX = createMalCoreFunction(jsFnX);
+    return __evaluate__2(createMalList(malFnX, createMalList(malFnX)));
+  };
+  function_question_ = function(jsList) {
     var malValue;
     malValue = jsList.value;
-    return createMalBoolean(pred(malValue));
+    return createMalBoolean(malCoreFunction_question_(malValue) || malUserFunction_question_(malValue));
   };
-};
-
-__evaluate__ = function(malVal) {
-  return evaluate([environment])(malVal);
-};
-
-__evaluate__2 = function(malVal) {
-  return __evaluate__(__evaluate__(malVal));
-};
-
-_evaluate_ = function(jsString) {
-  return _process_([environment])(jsString);
-};
-
-_evaluateString = function(malArgs) {
-  return _evaluate_(stripQuotes(extractJsValue(car(malArgs))));
-};
-
-_evaluate = function(malArgs) {
-  return evaluate([environment])(car(malArgs));
-};
-
-_prStr = function(malArgs, printReadably_question_) {
-  return (toArray(malArgs)).map(function(malArg) {
-    return serialize(malArg, printReadably_question_);
-  });
-};
-
-prStr = function(malArgs) {
-  return createMalString('"' + (_prStr(malArgs, true)).join('') + '"');
-};
-
-str = function(malArgs) {
-  return createMalString('"' + (_prStr(malArgs, false)).join('') + '"');
-};
-
-prn = function(malArgs) {
-  display(_prStr(malArgs, true).join(''));
-  return malNil;
-};
-
-println = function(malArgs) {
-  display(_prStr(malArgs, false).join(''));
-  return malNil;
-};
-
-_read = function(malArgs) {
-  var jsFileName;
-  jsFileName = stripQuotes(extractJsValue(car(malArgs)));
-  return _dereq_('fs').readFileSync(jsFileName).toString();
-};
-
-setCoreFnsOnMalValues_bang_ = function(env, fns) {
-  var fn, fnName, _results;
-  _results = [];
-  for (fnName in fns) {
-    if (!__hasProp.call(fns, fnName)) continue;
-    fn = fns[fnName];
-    _results.push(env[fnName] = createMalCoreFunction(fn));
-  }
-  return _results;
-};
-
-setMalValue = function(malAtom, malValue) {
-  malAtom.malValue = malValue;
-  return malAtom;
-};
-
-stripQuotes = function(jsString) {
-  return jsString.slice(1, -1);
-};
-
-append = function(malArgs) {
-  var malList, malValues, _ref;
-  _ref = toArray(malArgs), malList = _ref[0], malValues = 2 <= _ref.length ? __slice.call(_ref, 1) : [];
-  return concat(malList, fromArray(malValues));
-};
-
-apply = function(malArgs) {
-  var malArgList, malFn, _ref;
-  _ref = toArray(malArgs), malFn = _ref[0], malArgList = _ref[1];
-  return evaluate([])(createMalList(malFn, malArgList));
-};
-
-areEqual = function(malArgs) {
-  var malValue0, malValue1, _areEqual, _ref;
-  _ref = toPartialArray(2, malArgs), malValue0 = _ref[0], malValue1 = _ref[1];
-  _areEqual = function(malValue0, malValue1) {
-    var jsIndex0, jsIndex1;
-    if (malList_question_(malValue0) && malList_question_(malValue1)) {
-      return equal_question_(malValue0, malValue1, _areEqual);
-    } else if (malIndex_question_(malValue0) && malIndex_question_(malValue1)) {
-      jsIndex0 = malValue0.jsValue;
-      jsIndex1 = malValue1.jsValue;
-      return (_areEqual(keys(jsIndex0), keys(jsIndex1))) && (_areEqual(vals(jsIndex0), vals(jsIndex1)));
+  ignore_bang_ = function(malArgs) {
+    return malIgnore;
+  };
+  ignoreIfTrue = function(malArgs) {
+    var malBool, malValue, _ref;
+    _ref = toPartialArray(2, malArgs), malBool = _ref[0], malValue = _ref[1];
+    if (extractJsValue(malBool)) {
+      return malIgnore;
     } else {
-      return malValue0.jsValue === malValue1.jsValue;
+      return malValue;
     }
   };
-  return createMalBoolean(_areEqual(malValue0, malValue1));
-};
-
-atom = function(malArgs) {
-  return createMalAtom(car(malArgs));
-};
-
-call = function(malArgs) {
-  return evaluate([])(malArgs);
-};
-
-_car = function(malArgs) {
-  var arg;
-  arg = car(malArgs);
-  if (malList_question_(arg)) {
-    return car(arg);
-  } else {
-    return malNil;
-  }
-};
-
-_cdr = function(malArgs) {
-  var arg;
-  arg = car(malArgs);
-  if (malList_question_(arg)) {
-    return cdr(arg);
-  } else {
-    return malNil;
-  }
-};
-
-_concat = function(malArgs) {
-  var malLists;
-  malLists = toArray(malArgs);
-  return concat.apply(null, malLists);
-};
-
-cons = function(malArgs) {
-  return createMalList(car(malArgs), next(malArgs));
-};
-
-count = function(malArgs) {
-  var malList, _reduce;
-  malList = car(malArgs);
-  if (!malList_question_(malList)) {
-    return malNil;
-  }
-  _reduce = function(sum, value) {
-    return sum + 1;
+  ignoreUnlessTrue = function(malArgs) {
+    var malBool, malValue, _ref;
+    _ref = toPartialArray(2, malArgs), malBool = _ref[0], malValue = _ref[1];
+    if (extractJsValue(malBool)) {
+      return malValue;
+    } else {
+      return malIgnore;
+    }
   };
-  return createMalNumber(reduce(0, _reduce, car(malArgs)));
-};
-
-deref = function(malArgs) {
-  return (car(malArgs)).malValue;
-};
-
-_drop = function(malArgs) {
-  var malList, malNumber, _ref;
-  _ref = toPartialArray(2, malArgs), malNumber = _ref[0], malList = _ref[1];
-  return drop(extractJsValue(malNumber), malList);
-};
-
-_empty_question_ = function(malArgs) {
-  if (empty_question_(malArgs)) {
-    return malFalse;
-  } else {
-    if (empty_question_(car(malArgs))) {
+  _interpret = function(malArgs) {
+    return interpret(stripQuotes(extractJsValue(car(malArgs))));
+  };
+  _last = function(malArgs) {
+    var arg;
+    arg = car(malArgs);
+    if (malList_question_(arg)) {
+      return last(arg);
+    } else {
+      return malNil;
+    }
+  };
+  list = function(malArgs) {
+    return malArgs;
+  };
+  load = function(malArgs) {
+    return _evaluate_(_read(malArgs));
+  };
+  loadWithBareEnv = function(malArgs) {
+    var file, jsFileName, localEnv, malFileName, _ref;
+    _ref = toPartialArray(2, malArgs), malFileName = _ref[0], localEnv = _ref[1];
+    jsFileName = stripQuotes(extractJsValue(malFileName));
+    file = _dereq_('fs').readFileSync(jsFileName).toString();
+    return _process_([fromMalIndex(localEnv)])(file);
+  };
+  loadWithEnv = function(malArgs) {
+    var file, jsFileName, localEnv, malFileName, _ref;
+    _ref = toPartialArray(2, malArgs), malFileName = _ref[0], localEnv = _ref[1];
+    jsFileName = stripQuotes(extractJsValue(malFileName));
+    file = _dereq_('fs').readFileSync(jsFileName, 'utf-8').toString();
+    return _process_([fromMalIndex(localEnv), environment])(file);
+  };
+  malReduce = function(malArgs) {
+    var malArgList, malFn, malSeed, _malArgs, _reduce, _ref;
+    _ref = toArray(malArgs), malSeed = _ref[0], malFn = _ref[1], malArgList = _ref[2];
+    _malArgs = toArray(malArgList);
+    _reduce = function(memo, item) {
+      var _memo;
+      _memo = malList_question_(memo) ? createMalList(createMalSymbol('quote'), createMalList(memo)) : memo;
+      return evaluate([])(createMalList(malFn, createMalList(_memo, createMalList(item))));
+    };
+    return _malArgs.reduce(_reduce, malSeed);
+  };
+  map = function(malArgs) {
+    var malArgList, malFn, results, __malArgs, _malArgs, _ref;
+    _ref = toArray(malArgs), malFn = _ref[0], malArgList = _ref[1];
+    _malArgs = toArray(malArgList);
+    __malArgs = _malArgs.map(function(x) {
+      return createMalList(malFn, createMalList(x));
+    });
+    results = __malArgs.map(evaluate([]));
+    return fromArray(results);
+  };
+  meta = function(malArgs) {
+    var malMeta;
+    malMeta = (car(malArgs)).meta;
+    if (malMeta != null) {
+      return malMeta;
+    } else {
+      return malNil;
+    }
+  };
+  _not = function(malArgs) {
+    var malVal;
+    malVal = car(malArgs);
+    if (malNil_question_(malVal) || malFalse_question_(malVal)) {
       return malTrue;
     } else {
       return malFalse;
     }
-  }
-};
-
-evalWithBareEnv = function(malArgs) {
-  var expr, localEnv, _ref;
-  _ref = toPartialArray(2, malArgs), expr = _ref[0], localEnv = _ref[1];
-  return evaluate([fromMalIndex(localEnv)])(expr);
-};
-
-evalWithEnv = function(malArgs) {
-  var expr, localEnv, _ref;
-  _ref = toPartialArray(2, malArgs), expr = _ref[0], localEnv = _ref[1];
-  return evaluate([fromMalIndex(localEnv), environment])(expr);
-};
-
-first = function(malArgs) {
-  return car(car(malArgs));
-};
-
-fix = function(malArgs) {
-  var jsFnX, malFnF, malFnX;
-  malFnF = car(malArgs);
-  jsFnX = function(malArgs1) {
-    var jsFnY, malFnX, malFnY;
-    malFnX = car(malArgs1);
-    jsFnY = function(malArgs2) {
-      var malValY;
-      malValY = car(malArgs2);
-      return __evaluate__2(createMalList(createMalList(malFnX, createMalList(malFnX)), createMalList(malValY)));
-    };
-    malFnY = createMalCoreFunction(jsFnY);
-    return __evaluate__2(createMalList(malFnF, createMalList(malFnY)));
   };
-  malFnX = createMalCoreFunction(jsFnX);
-  return __evaluate__2(createMalList(malFnX, createMalList(malFnX)));
-};
-
-function_question_ = function(jsList) {
-  var malValue;
-  malValue = jsList.value;
-  return createMalBoolean(malCoreFunction_question_(malValue) || malUserFunction_question_(malValue));
-};
-
-ignore_bang_ = function(malArgs) {
-  return malIgnore;
-};
-
-ignoreIfTrue = function(malArgs) {
-  var malBool, malValue, _ref;
-  _ref = toPartialArray(2, malArgs), malBool = _ref[0], malValue = _ref[1];
-  if (extractJsValue(malBool)) {
-    return malIgnore;
-  } else {
-    return malValue;
-  }
-};
-
-ignoreUnlessTrue = function(malArgs) {
-  var malBool, malValue, _ref;
-  _ref = toPartialArray(2, malArgs), malBool = _ref[0], malValue = _ref[1];
-  if (extractJsValue(malBool)) {
-    return malValue;
-  } else {
-    return malIgnore;
-  }
-};
-
-_interpret = function(malArgs) {
-  return interpret(stripQuotes(extractJsValue(car(malArgs))));
-};
-
-_last = function(malArgs) {
-  var arg;
-  arg = car(malArgs);
-  if (malList_question_(arg)) {
-    return last(arg);
-  } else {
-    return malNil;
-  }
-};
-
-list = function(malArgs) {
-  return malArgs;
-};
-
-load = function(malArgs) {
-  return _evaluate_(_read(malArgs));
-};
-
-loadWithBareEnv = function(malArgs) {
-  var file, jsFileName, localEnv, malFileName, _ref;
-  _ref = toPartialArray(2, malArgs), malFileName = _ref[0], localEnv = _ref[1];
-  jsFileName = stripQuotes(extractJsValue(malFileName));
-  file = _dereq_('fs').readFileSync(jsFileName).toString();
-  return _process_([fromMalIndex(localEnv)])(file);
-};
-
-loadWithEnv = function(malArgs) {
-  var file, jsFileName, localEnv, malFileName, _ref;
-  _ref = toPartialArray(2, malArgs), malFileName = _ref[0], localEnv = _ref[1];
-  jsFileName = stripQuotes(extractJsValue(malFileName));
-  file = _dereq_('fs').readFileSync(jsFileName, 'utf-8').toString();
-  return _process_([fromMalIndex(localEnv), environment])(file);
-};
-
-malReduce = function(malArgs) {
-  var malArgList, malFn, malSeed, _malArgs, _reduce, _ref;
-  _ref = toArray(malArgs), malSeed = _ref[0], malFn = _ref[1], malArgList = _ref[2];
-  _malArgs = toArray(malArgList);
-  _reduce = function(memo, item) {
-    var _memo;
-    _memo = malList_question_(memo) ? createMalList(createMalSymbol('quote'), createMalList(memo)) : memo;
-    return evaluate([])(createMalList(malFn, createMalList(_memo, createMalList(item))));
+  nth = function(malArgs) {
+    var i, malList, malNumber, _i, _ref, _ref1;
+    _ref = toPartialArray(2, malArgs), malNumber = _ref[0], malList = _ref[1];
+    for (i = _i = 0, _ref1 = extractJsValue(malNumber); 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
+      malList = cdr(malList);
+    }
+    return car(malList);
   };
-  return _malArgs.reduce(_reduce, malSeed);
-};
-
-map = function(malArgs) {
-  var malArgList, malFn, results, __malArgs, _malArgs, _ref;
-  _ref = toArray(malArgs), malFn = _ref[0], malArgList = _ref[1];
-  _malArgs = toArray(malArgList);
-  __malArgs = _malArgs.map(function(x) {
-    return createMalList(malFn, createMalList(x));
-  });
-  results = __malArgs.map(evaluate([]));
-  return fromArray(results);
-};
-
-meta = function(malArgs) {
-  var malMeta;
-  malMeta = (car(malArgs)).meta;
-  if (malMeta != null) {
-    return malMeta;
-  } else {
-    return malNil;
-  }
-};
-
-_not = function(malArgs) {
-  var malVal;
-  malVal = car(malArgs);
-  if (malNil_question_(malVal) || malFalse_question_(malVal)) {
-    return malTrue;
-  } else {
-    return malFalse;
-  }
-};
-
-nth = function(malArgs) {
-  var i, malList, malNumber, _i, _ref, _ref1;
-  _ref = toPartialArray(2, malArgs), malNumber = _ref[0], malList = _ref[1];
-  for (i = _i = 0, _ref1 = extractJsValue(malNumber); 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
-    malList = cdr(malList);
-  }
-  return car(malList);
-};
-
-prepend = function(malArgs) {
-  var malList, malValues, _reduce, _ref;
-  _ref = toArray(malArgs), malList = _ref[0], malValues = 2 <= _ref.length ? __slice.call(_ref, 1) : [];
-  _reduce = function(list, val) {
-    return createMalList(val, list);
+  prepend = function(malArgs) {
+    var malList, malValues, _reduce, _ref;
+    _ref = toArray(malArgs), malList = _ref[0], malValues = 2 <= _ref.length ? __slice.call(_ref, 1) : [];
+    _reduce = function(list, val) {
+      return createMalList(val, list);
+    };
+    return malValues.reduce(_reduce, malList);
   };
-  return malValues.reduce(_reduce, malList);
+  _quit_ = function() {
+    return process.exit(0);
+  };
+  read = function(jsList) {
+    return createMalString(_read(jsList));
+  };
+  reset = function(malArgs) {
+    var value, _ref;
+    _ref = toPartialArray(2, malArgs), atom = _ref[0], value = _ref[1];
+    return setMalValue(atom, value);
+  };
+  rest = function(malArgs) {
+    var arg;
+    arg = car(malArgs);
+    if (malList_question_(arg)) {
+      return cdr(arg);
+    } else {
+      return malNil;
+    }
+  };
+  _reverse = function(malArgs) {
+    var arg;
+    arg = car(malArgs);
+    if (malList_question_(arg)) {
+      return reverse(arg);
+    } else {
+      return malNil;
+    }
+  };
+  set = function(malArgs) {
+    var index, key, val, _ref;
+    _ref = toPartialArray(3, malArgs), index = _ref[0], key = _ref[1], val = _ref[2];
+    (extractJsValue(index))[extractJsValue(key)] = val;
+    return index;
+  };
+  slurp = function(malArgs) {
+    var jsFileName;
+    jsFileName = stripQuotes(extractJsValue(car(malArgs)));
+    return createMalString(circumpendQuotes(_dereq_('fs').readFileSync(jsFileName).toString()));
+  };
+  symbol = function(malArgs) {
+    var jsStr, malValue;
+    malValue = car(malArgs);
+    if (malString_question_(malValue)) {
+      jsStr = extractJsValue(malValue);
+      return createMalSymbol(jsStr.slice(1, -1));
+    } else {
+      return malNil;
+    }
+  };
+  _take = function(malArgs) {
+    var malList, malNumber, _ref;
+    _ref = toPartialArray(2, malArgs), malNumber = _ref[0], malList = _ref[1];
+    return take(extractJsValue(malNumber), malList);
+  };
+  typeOf = function(malArgs) {
+    var malValue;
+    malValue = car(malArgs);
+    return createMalString(circumpendQuotes(malValue.type));
+  };
+  _throw = function(malArgs) {
+    throw car(malArgs);
+  };
+  time_hyphen_ms = function() {
+    return createMalNumber(new Date().getTime());
+  };
+  withMeta = function(malArgs) {
+    var jsValue, malMeta, malVal, malValue, type, _ref;
+    _ref = toPartialArray(2, malArgs), malVal = _ref[0], malMeta = _ref[1];
+    if (malAtom_question_(malVal)) {
+      malValue = malVal.malValue, type = malVal.type;
+      return {
+        malValue: malValue,
+        type: type,
+        meta: malMeta
+      };
+    } else {
+      jsValue = malVal.jsValue, type = malVal.type;
+      return {
+        jsValue: jsValue,
+        type: type,
+        meta: malMeta
+      };
+    }
+  };
+  write = function(malArgs) {
+    return createMalString(serialize(car(malArgs)));
+  };
+  _ref = [malAtom_question_, malBoolean_question_, malCoreFunction_question_, malFalse_question_, malList_question_, malMacro_question_, malNil_question_, malNumber_question_, malSymbol_question_, malString_question_, malUserFunction_question_, malTrue_question_].map(createPredicate), atom_question_ = _ref[0], boolean_question_ = _ref[1], coreFn_question_ = _ref[2], false_question_ = _ref[3], list_question_ = _ref[4], macro_question_ = _ref[5], nil_question_ = _ref[6], number_question_ = _ref[7], symbol_question_ = _ref[8], string_question_ = _ref[9], userFn_question_ = _ref[10], true_question_ = _ref[11];
+  functionsOnMalValues = {
+    '=': areEqual,
+    'append': append,
+    'apply': apply,
+    'atom': atom,
+    'atom?': atom_question_,
+    'boolean?': boolean_question_,
+    'car': _car,
+    'call': call,
+    'cdr': _cdr,
+    'cons': cons,
+    'concat': _concat,
+    'core-fn?': coreFn_question_,
+    'count': count,
+    'deref': deref,
+    'drop': _drop,
+    'empty?': _empty_question_,
+    'eval': _evaluate,
+    'evalStr': _evaluateString,
+    'eval-with-env': evalWithEnv,
+    'eval-with-bare-env': evalWithBareEnv,
+    'first': _car,
+    'false?': false_question_,
+    'fix': fix,
+    'function?': function_question_,
+    'ignore!': ignore_bang_,
+    'ignoreIfTrue': ignoreIfTrue,
+    'ignoreUnlessTrue': ignoreUnlessTrue,
+    'last': _last,
+    'list': list,
+    'list?': list_question_,
+    'load': load,
+    'load-with-env': loadWithEnv,
+    'load-with-bare-env': loadWithBareEnv,
+    'macro?': macro_question_,
+    'map': map,
+    'meta': meta,
+    'nil?': nil_question_,
+    'not': _not,
+    'nth': nth,
+    'number?': number_question_,
+    'parse': _interpret,
+    'prepend': prepend,
+    'println': println(display),
+    'prn': prn(display),
+    'pr-str': prStr,
+    '-quit-': _quit_,
+    'read': read,
+    'reduce': malReduce,
+    'reset!': reset,
+    'rest': _cdr,
+    'reverse': _reverse,
+    'set!': set,
+    'slurp': slurp,
+    'str': str,
+    'string?': string_question_,
+    'symbol': symbol,
+    'symbol?': symbol_question_,
+    'take': _take,
+    'throw': _throw,
+    'time-ms': time_hyphen_ms,
+    'true?': true_question_,
+    'typeof': typeOf,
+    'user-fn?': userFn_question_,
+    'with-meta': withMeta,
+    'write': write
+  };
+  environment = {};
+  setCoreFnsOnJsValues_bang_(environment, functionsOnJsValues);
+  setCoreFnsOnMalValues_bang_(environment, functionsOnMalValues);
+  environment['*ARGV*'] = createMalList();
+  _environment_ = fromJsObject(environment);
+  environment['*DEFAULT-ENV*'] = _environment_;
+  return {
+    environment: environment,
+    evalWithEnv: evalWithEnv,
+    _evaluateString: _evaluateString
+  };
 };
 
-_quit_ = function() {
-  return process.exit(0);
-};
-
-read = function(jsList) {
-  return createMalString(_read(jsList));
-};
-
-reset = function(malArgs) {
-  var value, _ref;
-  _ref = toPartialArray(2, malArgs), atom = _ref[0], value = _ref[1];
-  return setMalValue(atom, value);
-};
-
-rest = function(malArgs) {
-  var arg;
-  arg = car(malArgs);
-  if (malList_question_(arg)) {
-    return cdr(arg);
-  } else {
-    return malNil;
-  }
-};
-
-_reverse = function(malArgs) {
-  var arg;
-  arg = car(malArgs);
-  if (malList_question_(arg)) {
-    return reverse(arg);
-  } else {
-    return malNil;
-  }
-};
-
-set = function(malArgs) {
-  var index, key, val, _ref;
-  _ref = toPartialArray(3, malArgs), index = _ref[0], key = _ref[1], val = _ref[2];
-  (extractJsValue(index))[extractJsValue(key)] = val;
-  return index;
-};
-
-slurp = function(malArgs) {
-  var jsFileName;
-  jsFileName = stripQuotes(extractJsValue(car(malArgs)));
-  return createMalString(circumpendQuotes(_dereq_('fs').readFileSync(jsFileName).toString()));
-};
-
-symbol = function(malArgs) {
-  var jsStr, malValue;
-  malValue = car(malArgs);
-  if (malString_question_(malValue)) {
-    jsStr = extractJsValue(malValue);
-    return createMalSymbol(jsStr.slice(1, -1));
-  } else {
-    return malNil;
-  }
-};
-
-_take = function(malArgs) {
-  var malList, malNumber, _ref;
-  _ref = toPartialArray(2, malArgs), malNumber = _ref[0], malList = _ref[1];
-  return take(extractJsValue(malNumber), malList);
-};
-
-typeOf = function(malArgs) {
-  var malValue;
-  malValue = car(malArgs);
-  return createMalString(circumpendQuotes(malValue.type));
-};
-
-_throw = function(malArgs) {
-  throw car(malArgs);
-};
-
-time_hyphen_ms = function() {
-  return createMalNumber(new Date().getTime());
-};
-
-withMeta = function(malArgs) {
-  var jsValue, malMeta, malVal, malValue, type, _ref;
-  _ref = toPartialArray(2, malArgs), malVal = _ref[0], malMeta = _ref[1];
-  if (malAtom_question_(malVal)) {
-    malValue = malVal.malValue, type = malVal.type;
-    return {
-      malValue: malValue,
-      type: type,
-      meta: malMeta
-    };
-  } else {
-    jsValue = malVal.jsValue, type = malVal.type;
-    return {
-      jsValue: jsValue,
-      type: type,
-      meta: malMeta
-    };
-  }
-};
-
-write = function(malArgs) {
-  return createMalString(serialize(car(malArgs)));
-};
-
-_ref = [malAtom_question_, malBoolean_question_, malCoreFunction_question_, malFalse_question_, malList_question_, malMacro_question_, malNil_question_, malNumber_question_, malSymbol_question_, malString_question_, malUserFunction_question_, malTrue_question_].map(createPredicate), atom_question_ = _ref[0], boolean_question_ = _ref[1], coreFn_question_ = _ref[2], false_question_ = _ref[3], list_question_ = _ref[4], macro_question_ = _ref[5], nil_question_ = _ref[6], number_question_ = _ref[7], symbol_question_ = _ref[8], string_question_ = _ref[9], userFn_question_ = _ref[10], true_question_ = _ref[11];
-
-functionsOnMalValues = {
-  '=': areEqual,
-  'append': append,
-  'apply': apply,
-  'atom': atom,
-  'atom?': atom_question_,
-  'boolean?': boolean_question_,
-  'car': _car,
-  'call': call,
-  'cdr': _cdr,
-  'cons': cons,
-  'concat': _concat,
-  'core-fn?': coreFn_question_,
-  'count': count,
-  'deref': deref,
-  'drop': _drop,
-  'empty?': _empty_question_,
-  'eval': _evaluate,
-  'evalStr': _evaluateString,
-  'eval-with-env': evalWithEnv,
-  'eval-with-bare-env': evalWithBareEnv,
-  'first': _car,
-  'false?': false_question_,
-  'fix': fix,
-  'function?': function_question_,
-  'ignore!': ignore_bang_,
-  'ignoreIfTrue': ignoreIfTrue,
-  'ignoreUnlessTrue': ignoreUnlessTrue,
-  'last': _last,
-  'list': list,
-  'list?': list_question_,
-  'load': load,
-  'load-with-env': loadWithEnv,
-  'load-with-bare-env': loadWithBareEnv,
-  'macro?': macro_question_,
-  'map': map,
-  'meta': meta,
-  'nil?': nil_question_,
-  'not': _not,
-  'nth': nth,
-  'number?': number_question_,
-  'parse': _interpret,
-  'prepend': prepend,
-  'println': println,
-  'prn': prn,
-  'pr-str': prStr,
-  '-quit-': _quit_,
-  'read': read,
-  'reduce': malReduce,
-  'reset!': reset,
-  'rest': _cdr,
-  'reverse': _reverse,
-  'set!': set,
-  'slurp': slurp,
-  'str': str,
-  'string?': string_question_,
-  'symbol': symbol,
-  'symbol?': symbol_question_,
-  'take': _take,
-  'throw': _throw,
-  'time-ms': time_hyphen_ms,
-  'true?': true_question_,
-  'typeof': typeOf,
-  'user-fn?': userFn_question_,
-  'with-meta': withMeta,
-  'write': write
-};
-
-environment = {};
-
-setCoreFnsOnJsValues_bang_(environment, functionsOnJsValues);
-
-setCoreFnsOnMalValues_bang_(environment, functionsOnMalValues);
-
-environment['*ARGV*'] = createMalList();
-
-_environment_ = fromJsObject(environment);
-
-environment['*DEFAULT-ENV*'] = _environment_;
-
-module.exports = {
-  environment: environment,
-  evalWithEnv: evalWithEnv,
-  _evaluateString: _evaluateString
-};
+return getEnvironment;
 
 
 }).call(this,_dereq_('_process'))
-},{"./display":3,"./evaluate":6,"./index-utilities":7,"./interpret":8,"./js-utilities":9,"./linked-list":11,"./mal-type-utilities":12,"./process":17,"./serialize":18,"_process":15,"fs":14}],6:[function(_dereq_,module,exports){
+},{"./evaluate":5,"./index-utilities":6,"./interpret":7,"./js-utilities":8,"./linked-list":10,"./mal-type-utilities":11,"./process":16,"./serialize":17,"_process":14,"fs":13}],5:[function(_dereq_,module,exports){
 var addEnv, car, catch_asterisk_, cdr, circumpendQuotes, commentSignal, createFn, createLocalEnv, createMacro, createMalIndex, createMalKeyword, createMalList, createMalMacro, createMalNumber, createMalString, createMalSymbol, createMalUserFunction, def_bang_, defineNewValue, empty_question_, evalQuasiquotedExpr, evaluate, expandMacro, expand_hyphen_macro, extractJsValue, filter, fn_asterisk_, forEach, fromArray, ignorable_question_, jsString_question_, keyword_question_, let_asterisk_, letrec_asterisk_, lookup, macro_asterisk_, malCoreFunction_question_, malIgnore_question_, malIndex_question_, malList_question_, malMacro_question_, malNil, malSymbol_question_, malUserFunction_question_, map, next, quasiquote, quote, recurse, reduce, reduceBy2, reduceLet_asterisk_, reduceLetrec_asterisk_, reverse, serialize, setMainEnv, splat, spliceUnquote, spliceUnquote_question_, spliceUnquotedExpr_question_, toPartialArray, try_asterisk_, undef_bang_, undefineValue, unquote, unquote_question_, unquotedExpr_question_, unsetMainEnv, _do, _evaluate, _if,
   __hasProp = {}.hasOwnProperty;
 
@@ -1333,7 +1232,7 @@ module.exports = {
 };
 
 
-},{"./commentSignal":2,"./env-utilities":4,"./js-utilities":9,"./keyTokens":10,"./linked-list":11,"./mal-type-utilities":12,"./serialize":18}],7:[function(_dereq_,module,exports){
+},{"./commentSignal":2,"./env-utilities":3,"./js-utilities":8,"./keyTokens":9,"./linked-list":10,"./mal-type-utilities":11,"./serialize":17}],6:[function(_dereq_,module,exports){
 var createMalIndex, fromJsObject, fromMalIndex, jsString_question_,
   __hasProp = {}.hasOwnProperty;
 
@@ -1378,7 +1277,7 @@ module.exports = {
 };
 
 
-},{"./js-utilities":9,"./mal-type-utilities":12}],8:[function(_dereq_,module,exports){
+},{"./js-utilities":8,"./mal-type-utilities":11}],7:[function(_dereq_,module,exports){
 var interpret, parse, tokenize;
 
 parse = _dereq_('./parse');
@@ -1392,7 +1291,7 @@ interpret = function(sourceCode) {
 module.exports = interpret;
 
 
-},{"./parse":16,"./tokenize":19}],9:[function(_dereq_,module,exports){
+},{"./parse":15,"./tokenize":18}],8:[function(_dereq_,module,exports){
 var circumpendQuotes, jsNaN_question_, jsNumber_question_, jsString_question_;
 
 circumpendQuotes = function(jsString) {
@@ -1419,7 +1318,7 @@ module.exports = {
 };
 
 
-},{}],10:[function(_dereq_,module,exports){
+},{}],9:[function(_dereq_,module,exports){
 var binaryGlyphTokens, catch_asterisk_, def_bang_, deref, derefGlyph, expand_hyphen_macro, fn_asterisk_, glyphTokens, ignore, ignoreIfTrue, ignoreIfTrueGlyph, ignoreUnlessTrue, ignoreUnlessTrueGlyph, ignore_bang_, ignore_bang_Glyph, indexEnd, indexStart, keyTokens, keyword_question_, keywords, let_asterisk_, letrec_asterisk_, listEnd, listStart, macroTokens, macro_asterisk_, nil, quasiquote, quasiquoteGlyph, quote, quoteGlyph, splat, spliceUnquote, spliceUnquoteGlyph, try_asterisk_, undef_bang_, unquote, unquoteGlyph, _do, _false, _if, _process, _true,
   __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
@@ -1483,7 +1382,7 @@ module.exports = {
 };
 
 
-},{}],11:[function(_dereq_,module,exports){
+},{}],10:[function(_dereq_,module,exports){
 var EOL, car, cdr, concat, cons, copy, createMalList, createNode, drop, empty_question_, equal_question_, filter, forEach, fromArray, last, lastTail, malListType, malTypes, map, next, recurse, reduce, reduceBy2, reverse, take, toArray, toPartialArray, zip, _EOL,
   __slice = [].slice;
 
@@ -1754,7 +1653,7 @@ module.exports = {
 };
 
 
-},{"./mal-types":13}],12:[function(_dereq_,module,exports){
+},{"./mal-types":12}],11:[function(_dereq_,module,exports){
 var createMalAtom, createMalBoolean, createMalCoreFunction, createMalIdentifier, createMalIgnore, createMalIndex, createMalKeyword, createMalList, createMalMacro, createMalNil, createMalNumber, createMalSpecialForm, createMalString, createMalSymbol, createMalUserFunction, createMalValue, createPredicate, create_hyphen_factory_hyphen__ampersand__hyphen_predicate, extractJsValue, malAtomType, malAtom_question_, malBoolean_question_, malCoreFunction_question_, malFalse, malFalse_question_, malIdentifier_question_, malIgnore, malIgnore_question_, malIndex_question_, malKeyword_question_, malList_question_, malMacro_question_, malNil, malNil_question_, malNumber_question_, malSpecialForm_question_, malString_question_, malSymbol_question_, malTrue, malTrue_question_, malTypes, malUserFunction_question_, _createMalAtom, _createMalBoolean, _createMalList, _createMalUnit, _malUnit_question_, _ref, _ref1, _ref10, _ref11, _ref12, _ref13, _ref14, _ref15, _ref16, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9;
 
 createMalList = _dereq_('./linked-list').createMalList;
@@ -1865,7 +1764,7 @@ module.exports = {
 };
 
 
-},{"./linked-list":11,"./mal-types":13}],13:[function(_dereq_,module,exports){
+},{"./linked-list":10,"./mal-types":12}],12:[function(_dereq_,module,exports){
 var malAtomType, malBooleanType, malCoreFunctionType, malIdentifierType, malIndexType, malKeywordType, malListType, malMacroType, malNumberType, malSpecialFormType, malStringType, malSymbolType, malTypes, malUnitType, malUserFunctionType;
 
 malTypes = [malBooleanType = 'malBooleanType', malCoreFunctionType = 'malCoreFunctionType', malIdentifierType = 'malIdentifierType', malIndexType = 'malIndexType', malKeywordType = 'malKeywordType', malListType = 'malListType', malMacroType = 'malMacroType', malNumberType = 'malNumberType', malSpecialFormType = 'malSpecialFormType', malStringType = 'malStringType', malSymbolType = 'malSymbolType', malUnitType = 'malUnitType', malUserFunctionType = 'malUserFunctionType', malAtomType = 'malAtomType'];
@@ -1889,9 +1788,9 @@ module.exports = {
 };
 
 
-},{}],14:[function(_dereq_,module,exports){
+},{}],13:[function(_dereq_,module,exports){
 
-},{}],15:[function(_dereq_,module,exports){
+},{}],14:[function(_dereq_,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -1987,7 +1886,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],16:[function(_dereq_,module,exports){
+},{}],15:[function(_dereq_,module,exports){
 var atomize, binaryGlyphIndex, binaryGlyphTokens, binaryGlyph_question_, boolean_question_, comment, createMalBoolean, createMalIdentifier, createMalIgnore, createMalIndex, createMalList, createMalNil, createMalNumber, createMalString, createMalSymbol, deref, derefGlyph, extractJsValue, float_question_, glyphIndex, glyphTokens, glyph_question_, identifer_question_, ignore, ignoreIfTrue, ignoreIfTrueGlyph, ignoreUnlessTrue, ignoreUnlessTrueGlyph, ignore_bang_, ignore_bang_Glyph, ignore_question_, indexEnd, indexStart, indexStart_question_, integer_question_, keyTokens, listEnd, listStart, listStart_question_, nil, nil_question_, parse, parseBinaryGlyph, parseBoolean, parseFloat10, parseGlyph, parseIndex, parseInt10, parseList, quasiquote, quasiquoteGlyph, quote, quoteGlyph, reverse, spliceUnquote, spliceUnquoteGlyph, startsWith_question_, string_question_, unquote, unquoteGlyph, _false, _parse, _true,
   __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
@@ -2237,7 +2136,7 @@ identifer_question_ = startsWith_question_(':');
 module.exports = parse;
 
 
-},{"./commentSignal":2,"./keyTokens":10,"./linked-list":11,"./mal-type-utilities":12}],17:[function(_dereq_,module,exports){
+},{"./commentSignal":2,"./keyTokens":9,"./linked-list":10,"./mal-type-utilities":11}],16:[function(_dereq_,module,exports){
 var evaluate, interpret, process;
 
 evaluate = _dereq_('./evaluate').evaluate;
@@ -2253,7 +2152,7 @@ process = function(envs) {
 module.exports = process;
 
 
-},{"./evaluate":6,"./interpret":8}],18:[function(_dereq_,module,exports){
+},{"./evaluate":5,"./interpret":7}],17:[function(_dereq_,module,exports){
 var adjoinMalValue, commentSignal, coreFunctionLabel, extractJsValue, ignoreLabel, indexEnd, indexStart, keywordLabel, listEnd, listStart, macroLabel, malAtom_question_, malCoreFunction_question_, malIdentifier_question_, malIgnore_question_, malIndex_question_, malKeyword_question_, malList_question_, malMacro_question_, malNil_question_, malString_question_, malUserFunction_question_, nilLabel, reduce, serialize, serializeAtom, serializeIdentifier, serializeIndex, serializeList, serializeString, stripQuotes, userFunctionLabel,
   __hasProp = {}.hasOwnProperty;
 
@@ -2411,7 +2310,7 @@ userFunctionLabel = '<user function>';
 module.exports = serialize;
 
 
-},{"./commentSignal":2,"./keyTokens":10,"./linked-list":11,"./mal-type-utilities":12}],19:[function(_dereq_,module,exports){
+},{"./commentSignal":2,"./keyTokens":9,"./linked-list":10,"./mal-type-utilities":11}],18:[function(_dereq_,module,exports){
 var commentSignal, comment_question_, createTokenRegex, meaningful_question_, tokenize;
 
 commentSignal = _dereq_('./commentSignal');
