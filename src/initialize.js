@@ -53,16 +53,20 @@ function convertEventToCommand(event, transform) {
   }
 }
 
+function transformUi(command) {
+  var changes = translate(interpretUi(command));
+  for (var index in changes) {
+    modifyElement(
+      document.getElementById('console'),
+      changes[index]);
+  }
+}
+
 function handleEvent(transform) {
   return function (event) {
     var command = convertEventToCommand(event, transform);
-    var changes = translate(interpretUi(command));
-    for (var index in changes) {
-      modifyElement(
-        document.getElementById('console'),
-        changes[index]);
-    }
     appState = interpretAppState(command)(appState);
+    transformUi(command);
   };
 }
 
