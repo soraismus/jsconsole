@@ -9,11 +9,15 @@ initialize(interpretLisp(display));
 },{"./initialize.js":3,"./mal-lisp.js":9}],2:[function(require,module,exports){
 var SPAN = require('./tags.js').SPAN;
 
-var cursor               = { 'jsconsole-cursor': true };
-var header                = { 'jsconsole-header': true };
+var emptyString = '';
+
+var space = ' ';
+
+var _cursor              = { 'jsconsole-cursor': true };
+var _header              = { 'jsconsole-header': true };
 var oldPrompt            = { 'jsconsole-old-prompt': true };
 var oldPromptResponse    = { 'jsconsole-old-prompt-response': true };
-var prompt               = { 'jsconsole-prompt': true };
+var _prompt              = { 'jsconsole-prompt': true };
 var promptText           = { 'jsconsole-prompt-text': true };
 var promptTextPostCursor = { 'jsconsole-prompt-text-post-cursor': true };
 
@@ -34,7 +38,7 @@ function createOldPromptReply(text) {
 
 var cursor = SPAN(
   {
-    classes: cursor,
+    classes: _cursor,
     style: {
       'background-color': '#999',
       'color': 'transparent',
@@ -43,12 +47,12 @@ var cursor = SPAN(
       'position': 'absolute'
     }
   },
-  ' ');
+  space);
 
-var emptySpan = SPAN(null, '');
+var emptySpan = SPAN(null, emptyString);
 
 var header = SPAN(
-    { classes: header },
+    { classes: _header },
     SPAN({ style: { 'color': '#0ff' }}, 'Welcome to MHLisp Console!\n'));
 
 var promptLabel = SPAN(null, promptLabelText);
@@ -60,24 +64,16 @@ var relativeSpan = SPAN({
 });
 
 var prompt = SPAN(
-  {
-    classes: prompt,
-    style: { 'color': '#0d0' }
-  },
+  { classes: _prompt, style: { 'color': '#0d0' }},
   emptySpan,
   SPAN(null, promptLabel, promptText, cursor, relativeSpan),
   emptySpan);
 
 module.exports = {
-  header: header,
-  prompt: prompt,
-
   createOldPrompt: createOldPrompt,
   createOldPromptReply: createOldPromptReply,
-
-  //cursor: cursor,
-  //promptLabel: promptLabel,
-  //promptText: promptText,
+  header: header,
+  prompt: prompt,
 };
 
 },{"./tags.js":10}],3:[function(require,module,exports){
@@ -88,6 +84,54 @@ var interpretAppState = require('./interpretAppState.js');
 var interpretUi       = require('./interpretUi.js');
 var modifyElement     = require('./interpret').modifyElement;
 
+var appState = {
+  history: {
+    past: [],
+    future: [],
+    cache: [],
+    display: [],
+  },
+  cursor: {
+    pre: '',
+    post: ''
+  }
+};
+
+var backspace =  8;
+var _delete   = 46;
+var down      = 40;
+var enter     = 13;
+var left      = 37;
+var right     = 39;
+var up        = 38;
+
+function convertEventToCommand(event) {
+  switch (event.keyCode) {
+    case enter:
+      return interpreter.submit3(appState, transform);
+    case backspace:
+      event.preventDefault();
+      return interpreter.deleteLeftChar3(appState);
+    case left:
+      event.preventDefault();
+      return interpreter.moveCursorLeft3(appState);
+    case right:
+      event.preventDefault();
+      return interpreter.moveCursorRight3(appState);
+    case up:
+      event.preventDefault();
+      return interpreter.rewindHistory3(appState);
+    case down:
+      event.preventDefault();
+      return interpreter.fastForwardHistory3(appState);
+    case _delete:
+      event.preventDefault();
+      return interpreter.deleteRightChar3(appState);
+    default:
+      return interpreter.addChar3(appState, String.fromCharCode(event.charCode));
+  }
+}
+
 function _initialize(transform) {
   if (transform == null) {
     transform = function (value) {
@@ -96,19 +140,6 @@ function _initialize(transform) {
   }
 
   initialize();
-
-  var appState = {
-    history: {
-      past: [],
-      future: [],
-      cache: [],
-      display: [],
-    },
-    cursor: {
-      pre: '',
-      post: ''
-    }
-  };
 
   document.addEventListener(
     'keypress',
