@@ -1,24 +1,10 @@
-var createAndAttachElement = require('../domUtility/interpret').createAndAttachElement;
-var modifyElement          = require('../domUtility/interpret').modifyElement;
-
-var components        = require('./components');
-var translate         = require('./interpret2').translate;
+var appState          = require('./appState');
+var initializeUi      = require('./initializeUi');
 var interpreter       = require('./interpreter');
 var interpretAppState = require('./interpretAppState');
 var interpretUi       = require('./interpretUi');
-
-var appState = {
-  history: {
-    past: [],
-    future: [],
-    cache: [],
-    display: [],
-  },
-  cursor: {
-    pre: '',
-    post: ''
-  }
-};
+var modifyElement     = require('../domUtility/interpret').modifyElement;
+var translate         = require('./interpret2').translate;
 
 var backspace =  8;
 var _delete   = 46;
@@ -66,47 +52,8 @@ function handleEvent(promptLabel, transform) {
 function initialize(config) {
   var promptLabel = config.promptLabel;
   var transform   = config.transform;
-  if (transform == null) {
-    transform = function (value) {
-      return value;
-    };
-  }
   initializeUi(promptLabel);
   document.addEventListener('keypress', handleEvent(promptLabel, transform));
-}
-
-function initializeUi(promptLabel) {
-  createAndAttachElement(
-    document.getElementById('console'),
-   {
-    tag: 'div',
-    style: {
-      'top': '0px',
-      'left': '0px',
-      'right': '0px',
-      'bottom': '0px',
-      'position': 'absolute',
-      'overflow': 'auto'
-    },
-    children: [
-      {
-        tag: 'pre',
-        classes: { 'jsconsole': true },
-        style: {
-          'margin': '0px',
-          'position': 'relative',
-          'min-height': '100%',
-          'box-sizing': 'border-box',
-          'padding': '10px',
-          'padding-bottom': '10px'
-        },
-        children: [
-          components.header,
-          components.createPrompt(promptLabel)
-        ]
-      }
-    ]
-  });
 }
 
 function transformUi(promptLabel, command) {

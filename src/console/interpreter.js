@@ -18,12 +18,18 @@ function deleteRightChar(appState) {
 }
 
 function moveCursorLeft(appState) {
+  console.log('moveCursorLeft');
+  console.log('appState.cursor.pre', appState.cursor.pre);
+  console.log('appState.cursor.post', appState.cursor.post);
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
   var index = __promptText.length - 1;
-  return __promptText.length === 0
+  var command = __promptText.length === 0
     ? { commandType: 'noOp' }
     : { commandType: 'moveCursorLeft', index: index, __promptText: __promptText };
+  console.log('command.index', command.index);
+  console.log('command.__promptText', command.__promptText);
+  return command;
 }
 
 function moveCursorRight(appState) {
@@ -36,12 +42,8 @@ function moveCursorRight(appState) {
 }
 
 function fastForwardHistory(appState) {
-  console.log('fastForwardHistory');
   if (appState.history.future.length <= 0 ) {
-    console.log('future is empty');
-    console.log('cache: ', appState.history.cache);
     if (appState.history.cache.length > 0) {
-      console.log('cache is occupied');
       var preCursorText = appState.cursor.pre;
       var postCursorText = appState.cursor.post;
       var cursorText = (preCursorText + postCursorText).trim();
@@ -51,7 +53,6 @@ function fastForwardHistory(appState) {
         historyEntry: cursorText
       };
     } else {
-      console.log('cache is empty');
       return { commandType: 'noOp' };
     }
   }

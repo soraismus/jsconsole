@@ -1,30 +1,19 @@
-var modifyElement = require('../domUtility/interpret').modifyElement;
-var components    = require('./components');
-
+var modifyElement        = require('../domUtility/interpret').modifyElement;
+var components           = require('./components');
 var createOldPrompt      = components.createOldPrompt;
 var createOldPromptReply = components.createOldPromptReply;
 var createPrompt         = components.createPrompt;
+var childrenUtility      = require('../domUtility/children');
+var childByClass         = childrenUtility.childByClass;
+var childByQuery         = childrenUtility.childByQuery;
+var childByTag           = childrenUtility.childByTag;
 
 var magicNumber = 11;
 
-// ------------------------------------------------------------------------
-function identifyChild(mode) {
-  return function(specifier, index) {
-    var result = { mode: mode, key: { index: index }};
-    result.key[mode] = specifier;
-    return result;
-  };
-}
-
-var childByClass = identifyChild('class');
-var childByQuery = identifyChild('query');
-var childByTag   = identifyChild('tag');
-// ------------------------------------------------------------------------
-
-var oldPromptClass = 'jsconsole-old-prompt';
-var oldPromptResponseClass = 'jsconsole-old-prompt-response';
-var promptClass = 'jsconsole-prompt';
-var promptTextClass = 'jsconsole-prompt-text';
+var oldPromptClass            = 'jsconsole-old-prompt';
+var oldPromptResponseClass    = 'jsconsole-old-prompt-response';
+var promptClass               = 'jsconsole-prompt';
+var promptTextClass           = 'jsconsole-prompt-text';
 var promptTextPostCursorClass = 'jsconsole-prompt-text-post-cursor';
 
 var firstSpanChild = childByTag('span', 0);
@@ -74,10 +63,9 @@ function interpret(appState, command) {
   }
 };
 
-
 function translate (promptLabel, command) {
-  var cursorChanges;
-  var historyChanges;
+  var cursorChanges = [];
+  var historyChanges = [];
   for (var outerKey in command) {
     switch (outerKey) {
       case 'cursor':
@@ -112,6 +100,8 @@ function translateCursor(promptLabel, command, outerKey) {
             }]
           }
         }];
+      default:
+        return [];
     }
   }
 }

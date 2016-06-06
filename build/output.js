@@ -1,4 +1,20 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var appState = {
+  history: {
+    past: [],
+    future: [],
+    cache: [],
+    display: [],
+  },
+  cursor: {
+    pre: '',
+    post: ''
+  }
+};
+
+module.exports = appState;
+
+},{}],2:[function(require,module,exports){
 var SPAN = require('../domUtility/elements').SPAN;
 
 var emptyString = '';
@@ -25,6 +41,19 @@ function createOldPromptReply(text) {
     SPAN(null, '==> ' + text + '\n'));
 }
 
+function createPrompt(promptLabel) {
+  return SPAN(
+    { classes: _prompt, style: { 'color': '#0d0' }},
+    emptySpan,
+    SPAN(
+      null,
+      SPAN(null, promptLabel),
+      SPAN({ classes: promptText }),
+      cursor,
+      relativeSpan),
+    emptySpan);
+}
+
 var cursor = SPAN(
   {
     classes: _cursor,
@@ -49,19 +78,6 @@ var relativeSpan = SPAN({
   style: { 'position': 'relative' }
 });
 
-function createPrompt(promptLabel) {
-  return SPAN(
-    { classes: _prompt, style: { 'color': '#0d0' }},
-    emptySpan,
-    SPAN(
-      null,
-      SPAN(null, promptLabel),
-      SPAN({ classes: promptText }),
-      cursor,
-      relativeSpan),
-    emptySpan);
-}
-
 module.exports = {
   createPrompt: createPrompt,
   createOldPrompt: createOldPrompt,
@@ -69,28 +85,14 @@ module.exports = {
   header: header,
 };
 
-},{"../domUtility/elements":7}],2:[function(require,module,exports){
-var createAndAttachElement = require('../domUtility/interpret').createAndAttachElement;
-var modifyElement          = require('../domUtility/interpret').modifyElement;
-
-var components        = require('./components');
-var translate         = require('./interpret2').translate;
+},{"../domUtility/elements":10}],3:[function(require,module,exports){
+var appState          = require('./appState');
+var initializeUi      = require('./initializeUi');
 var interpreter       = require('./interpreter');
 var interpretAppState = require('./interpretAppState');
 var interpretUi       = require('./interpretUi');
-
-var appState = {
-  history: {
-    past: [],
-    future: [],
-    cache: [],
-    display: [],
-  },
-  cursor: {
-    pre: '',
-    post: ''
-  }
-};
+var modifyElement     = require('../domUtility/interpret').modifyElement;
+var translate         = require('./interpret2').translate;
 
 var backspace =  8;
 var _delete   = 46;
@@ -103,27 +105,27 @@ var up        = 38;
 function convertEventToCommand(event, transform) {
   switch (event.keyCode) {
     case enter:
-      return interpreter.submit3(appState, transform);
+      return interpreter.submit(appState, transform);
     case backspace:
       event.preventDefault();
-      return interpreter.deleteLeftChar3(appState);
+      return interpreter.deleteLeftChar(appState);
     case left:
       event.preventDefault();
-      return interpreter.moveCursorLeft3(appState);
+      return interpreter.moveCursorLeft(appState);
     case right:
       event.preventDefault();
-      return interpreter.moveCursorRight3(appState);
+      return interpreter.moveCursorRight(appState);
     case up:
       event.preventDefault();
-      return interpreter.rewindHistory3(appState);
+      return interpreter.rewindHistory(appState);
     case down:
       event.preventDefault();
-      return interpreter.fastForwardHistory3(appState);
+      return interpreter.fastForwardHistory(appState);
     case _delete:
       event.preventDefault();
-      return interpreter.deleteRightChar3(appState);
+      return interpreter.deleteRightChar(appState);
     default:
-      return interpreter.addChar3(appState, String.fromCharCode(event.charCode));
+      return interpreter.addChar(appState, String.fromCharCode(event.charCode));
   }
 }
 
@@ -138,51 +140,8 @@ function handleEvent(promptLabel, transform) {
 function initialize(config) {
   var promptLabel = config.promptLabel;
   var transform   = config.transform;
-
-  if (transform == null) {
-    transform = function (value) {
-      return value;
-    };
-  }
-
   initializeUi(promptLabel);
   document.addEventListener('keypress', handleEvent(promptLabel, transform));
-}
-
-function initializeUi(promptLabel) {
-  createAndAttachElement(
-    document.getElementById('console'),
-   {
-    tag: 'div',
-    style: {
-      'top': '0px',
-      'left': '0px',
-      'right': '0px',
-      'bottom': '0px',
-      'position': 'absolute',
-      'overflow': 'auto'
-    },
-    children: [
-      {
-        tag: 'pre',
-        classes: {
-          'jsconsole': true
-        },
-        style: {
-          'margin': '0px',
-          'position': 'relative',
-          'min-height': '100%',
-          'box-sizing': 'border-box',
-          'padding': '10px',
-          'padding-bottom': '10px'
-        },
-        children: [
-          components.header,
-          components.createPrompt(promptLabel)
-        ]
-      }
-    ]
-  });
 }
 
 function transformUi(promptLabel, command) {
@@ -196,34 +155,62 @@ function transformUi(promptLabel, command) {
 
 module.exports = initialize;
 
-},{"../domUtility/interpret":8,"./components":1,"./interpret2":3,"./interpretAppState":4,"./interpretUi":5,"./interpreter":6}],3:[function(require,module,exports){
-var modifyElement = require('../domUtility/interpret').modifyElement;
-var components    = require('./components');
+},{"../domUtility/interpret":11,"./appState":1,"./initializeUi":4,"./interpret2":5,"./interpretAppState":6,"./interpretUi":7,"./interpreter":8}],4:[function(require,module,exports){
+var components             = require('./components');
+var domUtility             = require('../domUtility/interpret');
+var createAndAttachElement = domUtility.createAndAttachElement;
+var DIV                    = require('../domUtility/elements').DIV;
+var PRE                    = require('../domUtility/elements').PRE;
 
+function initializeUi(promptLabel) {
+  domUtility.createAndAttachElement(
+    document.getElementById('console'),
+    DIV(
+      {
+        style: {
+          'top': '0px',
+          'left': '0px',
+          'right': '0px',
+          'bottom': '0px',
+          'position': 'absolute',
+          'overflow': 'auto'
+        }
+      },
+      PRE(
+        {
+          classes: { 'jsconsole': true },
+          style: {
+            'margin': '0px',
+            'position': 'relative',
+            'min-height': '100%',
+            'box-sizing': 'border-box',
+            'padding': '10px',
+            'padding-bottom': '10px'
+          }
+        },
+        components.header,
+        components.createPrompt(promptLabel))));
+}
+
+module.exports = initializeUi;
+
+},{"../domUtility/elements":10,"../domUtility/interpret":11,"./components":2}],5:[function(require,module,exports){
+var modifyElement        = require('../domUtility/interpret').modifyElement;
+var components           = require('./components');
 var createOldPrompt      = components.createOldPrompt;
 var createOldPromptReply = components.createOldPromptReply;
 var createPrompt         = components.createPrompt;
-
-var _0to9 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+var childrenUtility      = require('../domUtility/children');
+var childByClass         = childrenUtility.childByClass;
+var childByQuery         = childrenUtility.childByQuery;
+var childByTag           = childrenUtility.childByTag;
 
 var magicNumber = 11;
 
-function identifyChild(mode) {
-  return function(specifier, index) {
-    var result = { mode: mode, key: { index: index }};
-    result.key[mode] = specifier;
-    return result;
-  };
-}
-
-var childByClass = identifyChild('class');
-var childByQuery = identifyChild('query');
-var childByTag   = identifyChild('tag');
-
-var oldPromptClass = 'jsconsole-old-prompt';
-var oldPromptResponseClass = 'jsconsole-old-prompt-response';
-var promptClass = 'jsconsole-prompt';
-var promptTextClass = 'jsconsole-prompt-text';
+var oldPromptClass            = 'jsconsole-old-prompt';
+var oldPromptResponseClass    = 'jsconsole-old-prompt-response';
+var promptClass               = 'jsconsole-prompt';
+var promptTextClass           = 'jsconsole-prompt-text';
 var promptTextPostCursorClass = 'jsconsole-prompt-text-post-cursor';
 
 var firstSpanChild = childByTag('span', 0);
@@ -273,6 +260,21 @@ function interpret(appState, command) {
   }
 };
 
+function translate (promptLabel, command) {
+  var cursorChanges = [];
+  var historyChanges = [];
+  for (var outerKey in command) {
+    switch (outerKey) {
+      case 'cursor':
+        cursorChanges =
+          translateCursor(promptLabel, command, outerKey);
+      case 'history':
+        historyChanges =
+          translateHistory(promptLabel, command, outerKey);
+    }
+  }
+  return cursorChanges.concat(historyChanges);
+};
 
 function translateCursor(promptLabel, command, outerKey) {
   for (var innerKey in command[outerKey]) {
@@ -295,8 +297,24 @@ function translateCursor(promptLabel, command, outerKey) {
             }]
           }
         }];
+      default:
+        return [];
     }
   }
+}
+
+function translateHistory(promptLabel, command, outerKey) {
+  for (var innerKey in command[outerKey]) {
+    switch (innerKey) {
+      case 'fastForward':
+        break;
+      case 'rewind':
+        break;
+      case 'submit':
+        return translateSubmittal(promptLabel, command, outerKey, innerKey);
+    }
+  }
+  return [];
 }
 
 function translateSubmittal(promptLabel, command, outerKey, innerKey) {
@@ -322,42 +340,12 @@ function translateSubmittal(promptLabel, command, outerKey, innerKey) {
   }];
 }
 
-function translateHistory(promptLabel, command, outerKey) {
-  for (var innerKey in command[outerKey]) {
-    switch (innerKey) {
-      case 'fastForward':
-        break;
-      case 'rewind':
-        break;
-      case 'submit':
-        return translateSubmittal(promptLabel, command, outerKey, innerKey);
-    }
-  }
-  return [];
-}
-
-function translate (promptLabel, command) {
-  var cursorChanges;
-  var historyChanges;
-  for (var outerKey in command) {
-    switch (outerKey) {
-      case 'cursor':
-        cursorChanges =
-          translateCursor(promptLabel, command, outerKey);
-      case 'history':
-        historyChanges =
-          translateHistory(promptLabel, command, outerKey);
-    }
-  }
-  return cursorChanges.concat(historyChanges);
-};
-
 module.exports = {
   interpret: interpret,
   translate: translate
 };
 
-},{"../domUtility/interpret":8,"./components":1}],4:[function(require,module,exports){
+},{"../domUtility/children":9,"../domUtility/interpret":11,"./components":2}],6:[function(require,module,exports){
 function interpretAppState(command) {
   switch (command.commandType) {
     case 'addChar':
@@ -615,7 +603,7 @@ function interpretAppState(command) {
 
 module.exports = interpretAppState;
 
-},{}],5:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 function interpretUi(command) {
   switch (command.commandType) {
     case 'addChar':
@@ -707,12 +695,12 @@ function interpretUi(command) {
 
 module.exports = interpretUi;
 
-},{}],6:[function(require,module,exports){
-function addChar3(appState, char) {
+},{}],8:[function(require,module,exports){
+function addChar(appState, char) {
   return { commandType: 'addChar', char: char };
 }
 
-function deleteLeftChar3(appState) {
+function deleteLeftChar(appState) {
   var innerText = appState.cursor.pre;
   var end = innerText.length - 1;
   return innerText.length === 0
@@ -720,23 +708,29 @@ function deleteLeftChar3(appState) {
     : { commandType: 'deleteLeftChar', end: end, innerText: innerText };
 }
 
-function deleteRightChar3(appState) {
+function deleteRightChar(appState) {
   var innerText = appState.cursor.post;
   return innerText.length == 0
     ? { commandType: 'noOp' }
     : { commandType: 'deleteRightChar' };
 }
 
-function moveCursorLeft3(appState) {
+function moveCursorLeft(appState) {
+  console.log('moveCursorLeft');
+  console.log('appState.cursor.pre', appState.cursor.pre);
+  console.log('appState.cursor.post', appState.cursor.post);
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
   var index = __promptText.length - 1;
-  return __promptText.length === 0
+  var command = __promptText.length === 0
     ? { commandType: 'noOp' }
     : { commandType: 'moveCursorLeft', index: index, __promptText: __promptText };
+  console.log('command.index', command.index);
+  console.log('command.__promptText', command.__promptText);
+  return command;
 }
 
-function moveCursorRight3(appState) {
+function moveCursorRight(appState) {
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
   var length = __promptTextPost.length;
@@ -745,13 +739,9 @@ function moveCursorRight3(appState) {
     : { commandType: 'moveCursorRight', length: length, __promptTextPost: __promptTextPost };
 }
 
-function fastForwardHistory3(appState) {
-  console.log('fastForwardHistory');
+function fastForwardHistory(appState) {
   if (appState.history.future.length <= 0 ) {
-    console.log('future is empty');
-    console.log('cache: ', appState.history.cache);
     if (appState.history.cache.length > 0) {
-      console.log('cache is occupied');
       var preCursorText = appState.cursor.pre;
       var postCursorText = appState.cursor.post;
       var cursorText = (preCursorText + postCursorText).trim();
@@ -761,7 +751,6 @@ function fastForwardHistory3(appState) {
         historyEntry: cursorText
       };
     } else {
-      console.log('cache is empty');
       return { commandType: 'noOp' };
     }
   }
@@ -780,7 +769,7 @@ function fastForwardHistory3(appState) {
   };
 }
 
-function rewindHistory3(appState) {
+function rewindHistory(appState) {
   if (appState.history.past.length <= 0) {
     return { commandType: 'noOp' };
   }
@@ -799,7 +788,7 @@ function rewindHistory3(appState) {
   };
 }
 
-function submit3(appState, transform) {
+function submit(appState, transform) {
   if (transform == null) {
     transform = function (value) {
       return value;
@@ -819,19 +808,34 @@ function submit3(appState, transform) {
 }
 
 var interpreter = {
-  addChar3: addChar3,
-  deleteLeftChar3: deleteLeftChar3,
-  deleteRightChar3: deleteRightChar3,
-  fastForwardHistory3: fastForwardHistory3,
-  moveCursorLeft3: moveCursorLeft3,
-  moveCursorRight3: moveCursorRight3,
-  rewindHistory3: rewindHistory3,
-  submit3: submit3,
+  addChar: addChar,
+  deleteLeftChar: deleteLeftChar,
+  deleteRightChar: deleteRightChar,
+  fastForwardHistory: fastForwardHistory,
+  moveCursorLeft: moveCursorLeft,
+  moveCursorRight: moveCursorRight,
+  rewindHistory: rewindHistory,
+  submit: submit,
 };
 
 module.exports = interpreter;
 
-},{}],7:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
+function identifyChild(mode) {
+  return function(specifier, index) {
+    var result = { mode: mode, key: { index: index }};
+    result.key[mode] = specifier;
+    return result;
+  };
+}
+
+module.exports = {
+  childByClass: identifyChild('class'),
+  childByQuery: identifyChild('query'),
+  childByTag: identifyChild('tag')
+};
+
+},{}],10:[function(require,module,exports){
 function createElement(tag) {
   return function (config) {
     if (config == null) {
@@ -860,7 +864,11 @@ function createElement(tag) {
   };
 }
 
-var tags = { 'SPAN': true };
+var tags = {
+  'DIV': true,
+  'PRE': true,
+  'SPAN': true
+};
 
 var elementFactories = {};
 
@@ -870,7 +878,7 @@ for (var tagName in tags) {
 
 module.exports = elementFactories;
 
-},{}],8:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 function modifyElement(node, config) {
   if (config.classes != null) {
     for (var op in config.classes) {
@@ -1047,7 +1055,7 @@ module.exports = {
   modifyElement: modifyElement,
 };
 
-},{}],9:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 var initialize = require('./console/initialize');
 var interpretLisp = require('./mhlisp/mhlisp');
 
@@ -1060,7 +1068,7 @@ initialize({
   transform: interpretLisp(display)
 });
 
-},{"./console/initialize":2,"./mhlisp/mhlisp":10}],10:[function(require,module,exports){
+},{"./console/initialize":3,"./mhlisp/mhlisp":13}],13:[function(require,module,exports){
 (function (global){
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ReactiveAspen = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 var getEnvironment, initializeRepl, serialize, _process;
@@ -3410,4 +3418,4 @@ module.exports = tokenize;
 },{"./commentSignal":2}]},{},[1])(1)
 });
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[9]);
+},{}]},{},[12]);

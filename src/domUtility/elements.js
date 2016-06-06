@@ -26,7 +26,11 @@ function createElement(tag) {
   };
 }
 
-var tags = { 'SPAN': true };
+var tags = {
+  'DIV': true,
+  'PRE': true,
+  'SPAN': true
+};
 
 var elementFactories = {};
 
