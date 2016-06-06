@@ -1,10 +1,14 @@
 var SPAN = require('./tags.js').SPAN;
 
-var cursor               = { 'jsconsole-cursor': true };
-var header                = { 'jsconsole-header': true };
+var emptyString = '';
+
+var space = ' ';
+
+var _cursor              = { 'jsconsole-cursor': true };
+var _header              = { 'jsconsole-header': true };
 var oldPrompt            = { 'jsconsole-old-prompt': true };
 var oldPromptResponse    = { 'jsconsole-old-prompt-response': true };
-var prompt               = { 'jsconsole-prompt': true };
+var _prompt              = { 'jsconsole-prompt': true };
 var promptText           = { 'jsconsole-prompt-text': true };
 var promptTextPostCursor = { 'jsconsole-prompt-text-post-cursor': true };
 
@@ -25,7 +29,7 @@ function createOldPromptReply(text) {
 
 var cursor = SPAN(
   {
-    classes: cursor,
+    classes: _cursor,
     style: {
       'background-color': '#999',
       'color': 'transparent',
@@ -34,12 +38,12 @@ var cursor = SPAN(
       'position': 'absolute'
     }
   },
-  ' ');
+  space);
 
-var emptySpan = SPAN(null, '');
+var emptySpan = SPAN(null, emptyString);
 
 var header = SPAN(
-    { classes: header },
+    { classes: _header },
     SPAN({ style: { 'color': '#0ff' }}, 'Welcome to MHLisp Console!\n'));
 
 var promptLabel = SPAN(null, promptLabelText);
@@ -51,10 +55,7 @@ var relativeSpan = SPAN({
 });
 
 var prompt = SPAN(
-  {
-    classes: prompt,
-    style: { 'color': '#0d0' }
-  },
+  { classes: _prompt, style: { 'color': '#0d0' }},
   emptySpan,
   SPAN(null, promptLabel, promptText, cursor, relativeSpan),
   emptySpan);
