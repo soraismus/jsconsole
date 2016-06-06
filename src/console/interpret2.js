@@ -7,17 +7,31 @@ var createPrompt         = components.createPrompt;
 
 var _0to9 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
+function identifyChild(mode) {
+  return function(specifier, index) {
+    var result = { mode: mode, key: { index: index }};
+    result.key[mode] = specifier;
+    return result;
+  };
+}
+
+var childByClass = identifyChild('class');
+var childByQuery = identifyChild('query');
+var childByTag   = identifyChild('tag');
+
+var oldPromptClass = 'jsconsole-old-prompt';
+var oldPromptResponseClass = 'jsconsole-old-prompt-response';
+
+var firstSpanChild = childByTag('span', 0);
+
 function modifyOldPrompt(index, promptLabel, replacementText) {
   return {
-    child: {
-      mode: 'class',
-      key: { class: 'jsconsole-old-prompt', index: index }
-    },
+    child: childByClass(oldPromptClass, index),
     changes: {
       children: {
         modify: [
           {
-            child: { mode: 'tag', key: { tag: 'span', index: 0 }},
+            child: firstSpanChild,
             changes: { text: { replace: promptLabel + replacementText + '\n' }}
           }
         ]
@@ -28,15 +42,12 @@ function modifyOldPrompt(index, promptLabel, replacementText) {
 
 function modifyOldPromptResponse(index, replacementText) {
   return {
-    child: {
-      mode: 'class',
-      key: { class: 'jsconsole-old-prompt-response', index: index }
-    },
+    child: childByClass(oldPromptResponseClass, index),
     changes: {
       children: {
         modify: [
           {
-            child: { mode: 'tag', key: { tag: 'span', index: 0 }},
+            child: firstSpanChild,
             changes: { text: { replace: '==> ' + replacementText + '\n' }}
           }
         ]
@@ -72,7 +83,7 @@ function translate (promptLabel, command) {
               changes.push({
                 children: {
                   modify: [{
-                    child: { mode: 'class', key: { class: prompt, index: 0 }},
+                    child: childByClass(prompt, 0),
                     changes: { text: command[outerKey][innerKey] }
                   }]
                 }
@@ -82,7 +93,7 @@ function translate (promptLabel, command) {
               changes.push({
                 children: {
                   modify: [{
-                    child: { mode: 'class', key: { class: postPrompt, index: 0 }},
+                    child: childByClass(postPrompt, 0),
                     changes: { text: command[outerKey][innerKey] }
                   }]
                 }
@@ -109,10 +120,7 @@ function translate (promptLabel, command) {
                     ],
                     modify: [
                       {
-                        child: {
-                          mode: 'query',
-                          key: { query: 'div pre', index: 0 }
-                        },
+                        child: childByQuery('div pre', 0),
                         changes: {
                           children: {
                             add: [
