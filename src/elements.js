@@ -1,117 +1,42 @@
+var SPAN = require('./tags.js').SPAN;
+
 var promptLabelMessage = 'Lisp'
 var promptLabelText = promptLabelMessage + '> '
 
-var cursor = {
-  tag: 'span',
-  classes: { 'jsconsole-cursor': true },
-  style: {
-    'background-color': '#999',
-    'color': 'transparent',
-    'display': 'inline',
-    'z-index': 0,
-    'position': 'absolute'
-  },
-  children: [' ']
-};
-
-var emptySpan = { tag: 'span', children: [''] };
-
-  var header = {
-    tag: 'span',
-    classes: { 'jsconsole-header': true },
-    children: [
-      {
-        tag: 'span',
-        style: { 'color': '#0ff' },
-        children: ['Welcome to JQConsole!\nUse jqconsole.Write() to write and jqconsole.Input() to read.\n']
-      }
-    ]
-  };
-
-var promptLabel = {
-  tag: 'span',
-  children: [promptLabelText]
-};
-
-var promptText = {
-  tag: 'span',
-  classes: { 'jsconsole-prompt-text': true },
-};
-
-var relativeSpan = {
-  tag: 'span',
-  classes: { 'jsconsole-prompt-text-post-cursor': true },
-  style: {
-    'position': 'relative'
-  }
-};
-
-var prompt = {
-  tag: 'span',
-  classes: { 'jsconsole-prompt': true },
-  style: { 'color': '#0d0' },
-  children: [
-    emptySpan,
-    {
-      tag: 'span',
-      children: [
-        promptLabel,
-        promptText,
-        cursor,
-        relativeSpan
-      ]
-    },
-    emptySpan
-  ]
-};
-
-var textArea = {
-  tag: 'div',
-  style: {
-    'position': 'absolute',
-    'width': '1px',
-    'height': '0px',
-    'overflow': 'hidden',
-    'left': '30px',
-    'top': '40px'
-  },
-  children: [
-    {
-      tag: 'textarea',
-      attribs: {
-        'wrap': 'off',
-        'autocapitalize': 'off',
-        'autocorrect': 'off',
-        'spellcheck': false
-      },
-      style: {
-        'position': 'absolute',
-        'width': '2px'
-      }
+var cursor = SPAN(
+  {
+    classes: { 'jsconsole-cursor': true },
+    style: {
+      'background-color': '#999',
+      'color': 'transparent',
+      'display': 'inline',
+      'z-index': 0,
+      'position': 'absolute'
     }
-  ]
-};
+  },
+  ' ');
 
-function createPrompt() {
-  return {
-    tag: 'span',
+var emptySpan = SPAN(null, '');
+var header = SPAN(
+    { classes: { 'jsconsole-header': true }},
+    SPAN({ style: { 'color': '#0ff' }}, 'Welcome to MHLisp Console!\n'));
+
+var promptLabel = SPAN(null, promptLabelText);
+var promptText = SPAN({ classes: { 'jsconsole-prompt-text': true }});
+
+var relativeSpan = SPAN({
+  classes: { 'jsconsole-prompt-text-post-cursor': true },
+  style: { 'position': 'relative' }
+});
+
+var prompt = SPAN(
+  {
     classes: { 'jsconsole-prompt': true },
-    style: { 'color': '#0d0' },
-    children: [
-      emptySpan,
-      {
-        tag: 'span',
-        children: [
-          promptLabel,
-          promptText,
-          cursor,
-          relativeSpan
-        ]
-      },
-      emptySpan
-    ]
-  };
-}
+    style: { 'color': '#0d0' }
+  },
+  emptySpan,
+  SPAN(null, promptLabel, promptText, cursor, relativeSpan),
+  emptySpan);
 
 function createOldPrompt(text) {
   return {
@@ -143,7 +68,6 @@ function createOldPromptReply(text) {
 }
 
 module.exports = {
-  createPrompt: createPrompt,
   createOldPrompt: createOldPrompt,
   createOldPromptReply: createOldPromptReply,
 
@@ -154,7 +78,6 @@ module.exports = {
   promptLabel: promptLabel,
   promptText: promptText,
   relativeSpan: relativeSpan,
-  textArea: textArea,
 
   promptLabelMessage: promptLabelMessage,
   promptLabelText: promptLabelText,

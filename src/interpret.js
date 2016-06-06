@@ -1,5 +1,5 @@
 var interpreter = require('./interpreter');
-var elements = require('./elements');
+var elements    = require('./elements');
 
 function modifyElement(node, config) {
   if (config.classes != null) {

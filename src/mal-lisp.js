@@ -9,7 +9,7 @@ serialize = _dereq_('./serialize');
 
 initializeRepl = function(display) {
   var environment, repl, standard, _repl;
-  environment = getEnvironment(display).environment;
+  environment = getEnvironment(display);
   repl = function(envs, jsString) {
     var e;
     try {
@@ -858,14 +858,10 @@ getEnvironment = function(display) {
   environment['*ARGV*'] = createMalList();
   _environment_ = fromJsObject(environment);
   environment['*DEFAULT-ENV*'] = _environment_;
-  return {
-    environment: environment,
-    evalWithEnv: evalWithEnv,
-    _evaluateString: _evaluateString
-  };
+  return environment;
 };
 
-return getEnvironment;
+module.exports = getEnvironment;
 
 
 }).call(this,_dereq_('_process'))

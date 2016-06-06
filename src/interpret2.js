@@ -1,5 +1,5 @@
 var modifyElement = require('./interpret').modifyElement;
-var elements = require('./elements');
+var elements      = require('./elements');
 
 var _0to9 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -119,7 +119,7 @@ function translate (command) {
                             add: [
                               elements.createOldPrompt(command[outerKey][innerKey].oldPrompt),
                               elements.createOldPromptReply(command[outerKey][innerKey].response),
-                              elements.createPrompt()
+                              elements.prompt
                             ]
                           }
                         }

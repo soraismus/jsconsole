@@ -1,8 +1,3 @@
-elements = require('./elements.js');
-var createPrompt = elements.createPrompt;
-var createOldPrompt = elements.createOldPrompt;
-var createOldPromptReply = elements.createOldPromptReply;
-
 function addChar3(appState, char) {
   return { commandType: 'addChar', char: char };
 }

@@ -1,11 +1,9 @@
-var initialize = require('./interpret').initialize;
-//var interpret = require('./interpret2').interpret;
-var translate = require('./interpret2').translate;
-var interpreter = require('./interpreter');
-
+var initialize        = require('./interpret').initialize;
+var translate         = require('./interpret2').translate;
+var interpreter       = require('./interpreter');
 var interpretAppState = require('./interpretAppState.js');
-var interpretUi = require('./interpretUi.js');
-var modifyElement = require('./interpret').modifyElement;
+var interpretUi       = require('./interpretUi.js');
+var modifyElement     = require('./interpret').modifyElement;
 
 function _initialize(transform) {
   if (transform == null) {
