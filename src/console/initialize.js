@@ -31,27 +31,27 @@ var up        = 38;
 function convertEventToCommand(event, transform) {
   switch (event.keyCode) {
     case enter:
-      return interpreter.submit3(appState, transform);
+      return interpreter.submit(appState, transform);
     case backspace:
       event.preventDefault();
-      return interpreter.deleteLeftChar3(appState);
+      return interpreter.deleteLeftChar(appState);
     case left:
       event.preventDefault();
-      return interpreter.moveCursorLeft3(appState);
+      return interpreter.moveCursorLeft(appState);
     case right:
       event.preventDefault();
-      return interpreter.moveCursorRight3(appState);
+      return interpreter.moveCursorRight(appState);
     case up:
       event.preventDefault();
-      return interpreter.rewindHistory3(appState);
+      return interpreter.rewindHistory(appState);
     case down:
       event.preventDefault();
-      return interpreter.fastForwardHistory3(appState);
+      return interpreter.fastForwardHistory(appState);
     case _delete:
       event.preventDefault();
-      return interpreter.deleteRightChar3(appState);
+      return interpreter.deleteRightChar(appState);
     default:
-      return interpreter.addChar3(appState, String.fromCharCode(event.charCode));
+      return interpreter.addChar(appState, String.fromCharCode(event.charCode));
   }
 }
 
@@ -66,13 +66,11 @@ function handleEvent(promptLabel, transform) {
 function initialize(config) {
   var promptLabel = config.promptLabel;
   var transform   = config.transform;
-
   if (transform == null) {
     transform = function (value) {
       return value;
     };
   }
-
   initializeUi(promptLabel);
   document.addEventListener('keypress', handleEvent(promptLabel, transform));
 }
@@ -93,9 +91,7 @@ function initializeUi(promptLabel) {
     children: [
       {
         tag: 'pre',
-        classes: {
-          'jsconsole': true
-        },
+        classes: { 'jsconsole': true },
         style: {
           'margin': '0px',
           'position': 'relative',

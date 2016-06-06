@@ -1,8 +1,8 @@
-function addChar3(appState, char) {
+function addChar(appState, char) {
   return { commandType: 'addChar', char: char };
 }
 
-function deleteLeftChar3(appState) {
+function deleteLeftChar(appState) {
   var innerText = appState.cursor.pre;
   var end = innerText.length - 1;
   return innerText.length === 0
@@ -10,14 +10,14 @@ function deleteLeftChar3(appState) {
     : { commandType: 'deleteLeftChar', end: end, innerText: innerText };
 }
 
-function deleteRightChar3(appState) {
+function deleteRightChar(appState) {
   var innerText = appState.cursor.post;
   return innerText.length == 0
     ? { commandType: 'noOp' }
     : { commandType: 'deleteRightChar' };
 }
 
-function moveCursorLeft3(appState) {
+function moveCursorLeft(appState) {
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
   var index = __promptText.length - 1;
@@ -26,7 +26,7 @@ function moveCursorLeft3(appState) {
     : { commandType: 'moveCursorLeft', index: index, __promptText: __promptText };
 }
 
-function moveCursorRight3(appState) {
+function moveCursorRight(appState) {
   var __promptText = appState.cursor.pre;
   var __promptTextPost = appState.cursor.post;
   var length = __promptTextPost.length;
@@ -35,7 +35,7 @@ function moveCursorRight3(appState) {
     : { commandType: 'moveCursorRight', length: length, __promptTextPost: __promptTextPost };
 }
 
-function fastForwardHistory3(appState) {
+function fastForwardHistory(appState) {
   console.log('fastForwardHistory');
   if (appState.history.future.length <= 0 ) {
     console.log('future is empty');
@@ -70,7 +70,7 @@ function fastForwardHistory3(appState) {
   };
 }
 
-function rewindHistory3(appState) {
+function rewindHistory(appState) {
   if (appState.history.past.length <= 0) {
     return { commandType: 'noOp' };
   }
@@ -89,7 +89,7 @@ function rewindHistory3(appState) {
   };
 }
 
-function submit3(appState, transform) {
+function submit(appState, transform) {
   if (transform == null) {
     transform = function (value) {
       return value;
@@ -109,14 +109,14 @@ function submit3(appState, transform) {
 }
 
 var interpreter = {
-  addChar3: addChar3,
-  deleteLeftChar3: deleteLeftChar3,
-  deleteRightChar3: deleteRightChar3,
-  fastForwardHistory3: fastForwardHistory3,
-  moveCursorLeft3: moveCursorLeft3,
-  moveCursorRight3: moveCursorRight3,
-  rewindHistory3: rewindHistory3,
-  submit3: submit3,
+  addChar: addChar,
+  deleteLeftChar: deleteLeftChar,
+  deleteRightChar: deleteRightChar,
+  fastForwardHistory: fastForwardHistory,
+  moveCursorLeft: moveCursorLeft,
+  moveCursorRight: moveCursorRight,
+  rewindHistory: rewindHistory,
+  submit: submit,
 };
 
 module.exports = interpreter;

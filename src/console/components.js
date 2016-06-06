@@ -24,6 +24,19 @@ function createOldPromptReply(text) {
     SPAN(null, '==> ' + text + '\n'));
 }
 
+function createPrompt(promptLabel) {
+  return SPAN(
+    { classes: _prompt, style: { 'color': '#0d0' }},
+    emptySpan,
+    SPAN(
+      null,
+      SPAN(null, promptLabel),
+      SPAN({ classes: promptText }),
+      cursor,
+      relativeSpan),
+    emptySpan);
+}
+
 var cursor = SPAN(
   {
     classes: _cursor,
@@ -47,19 +60,6 @@ var relativeSpan = SPAN({
   classes: promptTextPostCursor,
   style: { 'position': 'relative' }
 });
-
-function createPrompt(promptLabel) {
-  return SPAN(
-    { classes: _prompt, style: { 'color': '#0d0' }},
-    emptySpan,
-    SPAN(
-      null,
-      SPAN(null, promptLabel),
-      SPAN({ classes: promptText }),
-      cursor,
-      relativeSpan),
-    emptySpan);
-}
 
 module.exports = {
   createPrompt: createPrompt,
