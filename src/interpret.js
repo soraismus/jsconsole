@@ -201,7 +201,7 @@ function initialize() {
         },
         children: [
           elements.header,
-          elements.prompt
+          elements.createPrompt('Lisp >')
         ]
       }
     ]

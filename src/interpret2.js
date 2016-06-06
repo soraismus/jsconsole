@@ -117,9 +117,9 @@ function translate (command) {
                         changes: {
                           children: {
                             add: [
-                              elements.createOldPrompt(command[outerKey][innerKey].oldPrompt),
+                              elements.createOldPrompt('Lisp >' + command[outerKey][innerKey].oldPrompt),
                               elements.createOldPromptReply(command[outerKey][innerKey].response),
-                              elements.prompt
+                              elements.createPrompt('Lisp >')
                             ]
                           }
                         }
