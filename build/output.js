@@ -1,12 +1,4 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var initialize = require('./initialize.js');
-var interpretLisp = require('./mal-lisp.js');
-
-var display = function (value) {};
-
-initialize(interpretLisp(display));
-
-},{"./initialize.js":3,"./mal-lisp.js":9}],2:[function(require,module,exports){
 var SPAN = require('./tags.js').SPAN;
 
 var emptyString = '';
@@ -76,7 +68,7 @@ module.exports = {
   prompt: prompt,
 };
 
-},{"./tags.js":10}],3:[function(require,module,exports){
+},{"./tags.js":10}],2:[function(require,module,exports){
 var initialize        = require('./interpret').initialize;
 var translate         = require('./interpret2').translate;
 var interpreter       = require('./interpreter');
@@ -162,7 +154,15 @@ function _initialize(transform) {
 
 module.exports = _initialize;
 
-},{"./interpret":4,"./interpret2":5,"./interpretAppState.js":6,"./interpretUi.js":7,"./interpreter":8}],4:[function(require,module,exports){
+},{"./interpret":4,"./interpret2":5,"./interpretAppState.js":6,"./interpretUi.js":7,"./interpreter":8}],3:[function(require,module,exports){
+var initialize = require('./initialize.js');
+var interpretLisp = require('./mal-lisp.js');
+
+var display = function (value) {};
+
+initialize(interpretLisp(display));
+
+},{"./initialize.js":2,"./mal-lisp.js":9}],4:[function(require,module,exports){
 var interpreter = require('./interpreter');
 var elements    = require('./elements');
 
@@ -378,7 +378,7 @@ module.exports = {
   modifyElement: modifyElement,
 };
 
-},{"./elements":2,"./interpreter":8}],5:[function(require,module,exports){
+},{"./elements":1,"./interpreter":8}],5:[function(require,module,exports){
 var modifyElement = require('./interpret').modifyElement;
 var elements      = require('./elements');
 
@@ -545,7 +545,7 @@ module.exports = {
   translate: translate
 };
 
-},{"./elements":2,"./interpret":4}],6:[function(require,module,exports){
+},{"./elements":1,"./interpret":4}],6:[function(require,module,exports){
 function interpretAppState(command) {
   switch (command.commandType) {
     case 'addChar':
@@ -3408,4 +3408,4 @@ for (var tagName in tags) {
 
 module.exports = elementFactories;
 
-},{}]},{},[1]);
+},{}]},{},[3]);
