@@ -277,30 +277,34 @@ function translate (promptLabel, command) {
 };
 
 function translateCursor(promptLabel, command, outerKey) {
+  var changes = [];
   for (var innerKey in command[outerKey]) {
     switch (innerKey) {
       case 'pre':
-        return [{
+        changes.push({
           children: {
             modify: [{
               child: childByClass(promptTextClass, 0),
               changes: { text: command[outerKey][innerKey] }
             }]
           }
-        }];
+        });
+        break;
       case 'post':
-        return [{
+        changes.push({
           children: {
             modify: [{
               child: childByClass(promptTextPostCursorClass, 0),
               changes: { text: command[outerKey][innerKey] }
             }]
           }
-        }];
+        });
+        break;
       default:
-        return [];
+        break;
     }
   }
+  return changes;
 }
 
 function translateHistory(promptLabel, command, outerKey) {
