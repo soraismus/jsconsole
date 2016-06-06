@@ -26,7 +26,7 @@ var left      = 37;
 var right     = 39;
 var up        = 38;
 
-function convertEventToCommand(event) {
+function convertEventToCommand(event, transform) {
   switch (event.keyCode) {
     case enter:
       return interpreter.submit3(appState, transform);
@@ -53,6 +53,19 @@ function convertEventToCommand(event) {
   }
 }
 
+function handleEvent(transform) {
+  return function (event) {
+    var command = convertEventToCommand(event, transform);
+    var changes = translate(interpretUi(command));
+    for (var index in changes) {
+      modifyElement(
+        document.getElementById('console'),
+        changes[index]);
+    }
+    appState = interpretAppState(command)(appState);
+  };
+}
+
 function _initialize(transform) {
   if (transform == null) {
     transform = function (value) {
@@ -61,54 +74,7 @@ function _initialize(transform) {
   }
 
   initialize();
-
-  document.addEventListener(
-    'keypress',
-    function (event) {
-      var command;
-      switch (event.keyCode) {
-        case 13: // enter
-          command = interpreter.submit3(appState, transform);
-          break;
-        case 8: // backspace
-          event.preventDefault();
-          command = interpreter.deleteLeftChar3(appState);
-          break;
-        case 37: // left;
-          event.preventDefault();
-          command = interpreter.moveCursorLeft3(appState);
-          break;
-        case 39: // right;
-          event.preventDefault();
-          command = interpreter.moveCursorRight3(appState);
-          break;
-        case 38: // up;
-          event.preventDefault();
-          command = interpreter.rewindHistory3(appState);
-          break;
-        case 40: // down;
-          event.preventDefault();
-          command = interpreter.fastForwardHistory3(appState);
-          break;
-        case 46: // delete
-          event.preventDefault();
-          command = interpreter.deleteRightChar3(appState);
-          break;
-        case 0:
-          command = interpreter.addChar3(appState, String.fromCharCode(event.charCode));
-          break;
-        default:
-          command = interpreter.addChar3(appState, String.fromCharCode(event.charCode));
-          break;
-      }
-      var changes = translate(interpretUi(command));
-      for (var index in changes) {
-        modifyElement(
-          document.getElementById('console'),
-          changes[index]);
-      }
-      appState = interpretAppState(command)(appState);
-    });
+  document.addEventListener('keypress', handleEvent(transform));
 }
 
 module.exports = _initialize;
