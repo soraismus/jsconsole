@@ -172,7 +172,7 @@ function createAndAttachElement(parent, config) {
   }
 }
 
-function initialize() {
+function initialize(promptLabel) {
   createAndAttachElement(
     document.getElementById('console'),
    {
@@ -201,7 +201,7 @@ function initialize() {
         },
         children: [
           elements.header,
-          elements.createPrompt('Lisp >')
+          elements.createPrompt(promptLabel)
         ]
       }
     ]

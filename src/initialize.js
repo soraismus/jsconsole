@@ -53,8 +53,8 @@ function convertEventToCommand(event, transform) {
   }
 }
 
-function transformUi(command) {
-  var changes = translate(interpretUi(command));
+function transformUi(promptLabel, command) {
+  var changes = translate(promptLabel, interpretUi(command));
   for (var index in changes) {
     modifyElement(
       document.getElementById('console'),
@@ -62,23 +62,26 @@ function transformUi(command) {
   }
 }
 
-function handleEvent(transform) {
+function handleEvent(promptLabel, transform) {
   return function (event) {
     var command = convertEventToCommand(event, transform);
     appState = interpretAppState(command)(appState);
-    transformUi(command);
+    transformUi(promptLabel, command);
   };
 }
 
-function _initialize(transform) {
+function _initialize(config) {
+  var promptLabel = config.promptLabel;
+  var transform   = config.transform;
+
   if (transform == null) {
     transform = function (value) {
       return value;
     };
   }
 
-  initialize();
-  document.addEventListener('keypress', handleEvent(transform));
+  initialize(promptLabel);
+  document.addEventListener('keypress', handleEvent(promptLabel, transform));
 }
 
 module.exports = _initialize;

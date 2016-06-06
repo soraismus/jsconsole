@@ -3,7 +3,7 @@ var elements      = require('./elements');
 
 var _0to9 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-function modifyOldPrompt(index, replacementText) {
+function modifyOldPrompt(index, promptLabel, replacementText) {
   return {
     child: {
       mode: 'class',
@@ -14,7 +14,7 @@ function modifyOldPrompt(index, replacementText) {
         modify: [
           {
             child: { mode: 'tag', key: { tag: 'span', index: 0 }},
-            changes: { text: { replace: 'Lisp> ' + replacementText + '\n' }}
+            changes: { text: { replace: promptLabel + replacementText + '\n' }}
           }
         ]
       }
@@ -55,7 +55,7 @@ function interpret(appState, command) {
 };
 
 // TODO: Refactor.
-function translate (command) {
+function translate (promptLabel, command) {
   var changes = [];
   var prompt = 'jsconsole-prompt-text';
   var postPrompt = 'jsconsole-prompt-text-post-cursor';
@@ -94,11 +94,6 @@ function translate (command) {
             case 'rewind':
               break;
             case 'submit':
-              console.log('translate -- submit');
-              console.log('display: ', command[outerKey][innerKey].display);
-              console.log('oldPrompt: ', command[outerKey][innerKey].oldPrompt);
-              console.log('response: ', command[outerKey][innerKey].response);
-
               if (command[outerKey][innerKey].display.length < 11) {
                 changes.push({
                   children: {
@@ -117,9 +112,9 @@ function translate (command) {
                         changes: {
                           children: {
                             add: [
-                              elements.createOldPrompt('Lisp >' + command[outerKey][innerKey].oldPrompt),
+                              elements.createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
                               elements.createOldPromptReply(command[outerKey][innerKey].response),
-                              elements.createPrompt('Lisp >')
+                              elements.createPrompt(promptLabel)
                             ]
                           }
                         }
@@ -133,7 +128,7 @@ function translate (command) {
                 var response = command[outerKey][innerKey].response;
 
                 var promptModifications = _0to9.map(function (i) {
-                  return modifyOldPrompt(i, display[i + 1][0]);
+                  return modifyOldPrompt(i, promptLabel, display[i + 1][0]);
                 });
 
                 var promptResponseModifications = _0to9.map(function (i) {
@@ -143,7 +138,7 @@ function translate (command) {
                 var modifications = promptModifications
                   .concat(promptResponseModifications)
                   .concat([
-                    modifyOldPrompt(10, oldPrompt),
+                    modifyOldPrompt(10, promptLabel, oldPrompt),
                     modifyOldPromptResponse(10, response)
                   ]);
 

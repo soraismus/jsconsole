@@ -125,8 +125,8 @@ function convertEventToCommand(event, transform) {
   }
 }
 
-function transformUi(command) {
-  var changes = translate(interpretUi(command));
+function transformUi(promptLabel, command) {
+  var changes = translate(promptLabel, interpretUi(command));
   for (var index in changes) {
     modifyElement(
       document.getElementById('console'),
@@ -134,23 +134,26 @@ function transformUi(command) {
   }
 }
 
-function handleEvent(transform) {
+function handleEvent(promptLabel, transform) {
   return function (event) {
     var command = convertEventToCommand(event, transform);
     appState = interpretAppState(command)(appState);
-    transformUi(command);
+    transformUi(promptLabel, command);
   };
 }
 
-function _initialize(transform) {
+function _initialize(config) {
+  var promptLabel = config.promptLabel;
+  var transform   = config.transform;
+
   if (transform == null) {
     transform = function (value) {
       return value;
     };
   }
 
-  initialize();
-  document.addEventListener('keypress', handleEvent(transform));
+  initialize(promptLabel);
+  document.addEventListener('keypress', handleEvent(promptLabel, transform));
 }
 
 module.exports = _initialize;
@@ -159,9 +162,14 @@ module.exports = _initialize;
 var initialize = require('./initialize.js');
 var interpretLisp = require('./mal-lisp.js');
 
+var promptLabel = 'Lisp > ';
+
 var display = function (value) {};
 
-initialize(interpretLisp(display));
+initialize({
+  promptLabel: promptLabel,
+  transform: interpretLisp(display)
+});
 
 },{"./initialize.js":2,"./mal-lisp.js":9}],4:[function(require,module,exports){
 var interpreter = require('./interpreter');
@@ -338,7 +346,7 @@ function createAndAttachElement(parent, config) {
   }
 }
 
-function initialize() {
+function initialize(promptLabel) {
   createAndAttachElement(
     document.getElementById('console'),
    {
@@ -367,7 +375,7 @@ function initialize() {
         },
         children: [
           elements.header,
-          elements.createPrompt('Lisp >')
+          elements.createPrompt(promptLabel)
         ]
       }
     ]
@@ -385,7 +393,7 @@ var elements      = require('./elements');
 
 var _0to9 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-function modifyOldPrompt(index, replacementText) {
+function modifyOldPrompt(index, promptLabel, replacementText) {
   return {
     child: {
       mode: 'class',
@@ -396,7 +404,7 @@ function modifyOldPrompt(index, replacementText) {
         modify: [
           {
             child: { mode: 'tag', key: { tag: 'span', index: 0 }},
-            changes: { text: { replace: 'Lisp> ' + replacementText + '\n' }}
+            changes: { text: { replace: promptLabel + replacementText + '\n' }}
           }
         ]
       }
@@ -437,7 +445,7 @@ function interpret(appState, command) {
 };
 
 // TODO: Refactor.
-function translate (command) {
+function translate (promptLabel, command) {
   var changes = [];
   var prompt = 'jsconsole-prompt-text';
   var postPrompt = 'jsconsole-prompt-text-post-cursor';
@@ -476,11 +484,6 @@ function translate (command) {
             case 'rewind':
               break;
             case 'submit':
-              console.log('translate -- submit');
-              console.log('display: ', command[outerKey][innerKey].display);
-              console.log('oldPrompt: ', command[outerKey][innerKey].oldPrompt);
-              console.log('response: ', command[outerKey][innerKey].response);
-
               if (command[outerKey][innerKey].display.length < 11) {
                 changes.push({
                   children: {
@@ -499,9 +502,9 @@ function translate (command) {
                         changes: {
                           children: {
                             add: [
-                              elements.createOldPrompt('Lisp >' + command[outerKey][innerKey].oldPrompt),
+                              elements.createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
                               elements.createOldPromptReply(command[outerKey][innerKey].response),
-                              elements.createPrompt('Lisp >')
+                              elements.createPrompt(promptLabel)
                             ]
                           }
                         }
@@ -515,7 +518,7 @@ function translate (command) {
                 var response = command[outerKey][innerKey].response;
 
                 var promptModifications = _0to9.map(function (i) {
-                  return modifyOldPrompt(i, display[i + 1][0]);
+                  return modifyOldPrompt(i, promptLabel, display[i + 1][0]);
                 });
 
                 var promptResponseModifications = _0to9.map(function (i) {
@@ -525,7 +528,7 @@ function translate (command) {
                 var modifications = promptModifications
                   .concat(promptResponseModifications)
                   .concat([
-                    modifyOldPrompt(10, oldPrompt),
+                    modifyOldPrompt(10, promptLabel, oldPrompt),
                     modifyOldPromptResponse(10, response)
                   ]);
 
