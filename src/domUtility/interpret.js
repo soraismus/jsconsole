@@ -1,6 +1,3 @@
-var interpreter = require('./interpreter');
-var elements    = require('./elements');
-
 function modifyElement(node, config) {
   if (config.classes != null) {
     for (var op in config.classes) {
@@ -172,43 +169,7 @@ function createAndAttachElement(parent, config) {
   }
 }
 
-function initialize(promptLabel) {
-  createAndAttachElement(
-    document.getElementById('console'),
-   {
-    tag: 'div',
-    style: {
-      'top': '0px',
-      'left': '0px',
-      'right': '0px',
-      'bottom': '0px',
-      'position': 'absolute',
-      'overflow': 'auto'
-    },
-    children: [
-      {
-        tag: 'pre',
-        classes: {
-          'jsconsole': true
-        },
-        style: {
-          'margin': '0px',
-          'position': 'relative',
-          'min-height': '100%',
-          'box-sizing': 'border-box',
-          'padding': '10px',
-          'padding-bottom': '10px'
-        },
-        children: [
-          elements.header,
-          elements.createPrompt(promptLabel)
-        ]
-      }
-    ]
-  });
-}
-
 module.exports = {
-  initialize: initialize,
+  createAndAttachElement: createAndAttachElement,
   modifyElement: modifyElement,
 };

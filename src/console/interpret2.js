@@ -1,5 +1,9 @@
-var modifyElement = require('./interpret').modifyElement;
-var elements      = require('./elements');
+var modifyElement = require('../domUtility/interpret').modifyElement;
+var components    = require('./components');
+
+var createOldPrompt      = components.createOldPrompt;
+var createOldPromptReply = components.createOldPromptReply;
+var createPrompt         = components.createPrompt;
 
 var _0to9 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -112,9 +116,9 @@ function translate (promptLabel, command) {
                         changes: {
                           children: {
                             add: [
-                              elements.createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
-                              elements.createOldPromptReply(command[outerKey][innerKey].response),
-                              elements.createPrompt(promptLabel)
+                              createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
+                              createOldPromptReply(command[outerKey][innerKey].response),
+                              createPrompt(promptLabel)
                             ]
                           }
                         }

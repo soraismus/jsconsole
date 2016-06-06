@@ -1,7 +1,7 @@
-var initialize = require('./initialize.js');
-var interpretLisp = require('./mal-lisp.js');
+var initialize = require('./console/initialize');
+var interpretLisp = require('./mhlisp/mhlisp');
 
-var promptLabel = 'Lisp > ';
+var promptLabel = 'Lisp> ';
 
 var display = function (value) {};
 

@@ -1,4 +1,4 @@
-var SPAN = require('./tags.js').SPAN;
+var SPAN = require('../domUtility/elements').SPAN;
 
 var emptyString = '';
 

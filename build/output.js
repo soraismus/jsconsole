@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var SPAN = require('./tags.js').SPAN;
+var SPAN = require('../domUtility/elements').SPAN;
 
 var emptyString = '';
 
@@ -69,13 +69,15 @@ module.exports = {
   header: header,
 };
 
-},{"./tags.js":10}],2:[function(require,module,exports){
-var initialize        = require('./interpret').initialize;
+},{"../domUtility/elements":7}],2:[function(require,module,exports){
+var createAndAttachElement = require('../domUtility/interpret').createAndAttachElement;
+var modifyElement          = require('../domUtility/interpret').modifyElement;
+
+var components        = require('./components');
 var translate         = require('./interpret2').translate;
 var interpreter       = require('./interpreter');
-var interpretAppState = require('./interpretAppState.js');
-var interpretUi       = require('./interpretUi.js');
-var modifyElement     = require('./interpret').modifyElement;
+var interpretAppState = require('./interpretAppState');
+var interpretUi       = require('./interpretUi');
 
 var appState = {
   history: {
@@ -125,15 +127,6 @@ function convertEventToCommand(event, transform) {
   }
 }
 
-function transformUi(promptLabel, command) {
-  var changes = translate(promptLabel, interpretUi(command));
-  for (var index in changes) {
-    modifyElement(
-      document.getElementById('console'),
-      changes[index]);
-  }
-}
-
 function handleEvent(promptLabel, transform) {
   return function (event) {
     var command = convertEventToCommand(event, transform);
@@ -142,7 +135,7 @@ function handleEvent(promptLabel, transform) {
   };
 }
 
-function _initialize(config) {
+function initialize(config) {
   var promptLabel = config.promptLabel;
   var transform   = config.transform;
 
@@ -152,201 +145,11 @@ function _initialize(config) {
     };
   }
 
-  initialize(promptLabel);
+  initializeUi(promptLabel);
   document.addEventListener('keypress', handleEvent(promptLabel, transform));
 }
 
-module.exports = _initialize;
-
-},{"./interpret":4,"./interpret2":5,"./interpretAppState.js":6,"./interpretUi.js":7,"./interpreter":8}],3:[function(require,module,exports){
-var initialize = require('./initialize.js');
-var interpretLisp = require('./mal-lisp.js');
-
-var promptLabel = 'Lisp > ';
-
-var display = function (value) {};
-
-initialize({
-  promptLabel: promptLabel,
-  transform: interpretLisp(display)
-});
-
-},{"./initialize.js":2,"./mal-lisp.js":9}],4:[function(require,module,exports){
-var interpreter = require('./interpreter');
-var elements    = require('./elements');
-
-function modifyElement(node, config) {
-  if (config.classes != null) {
-    for (var op in config.classes) {
-      switch (op) {
-        case 'add':
-          for (var klass in config.classes[op]) {
-            node.classList.add(klass);
-          }
-          break;
-        case 'remove':
-          for (var klass in config.classes[op]) {
-            node.classList.remove(klass);
-          }
-          break;
-        default:
-          throw new Error('invalid \"modifyElement.classes\" mode');
-      }
-    }
-  }
-
-  if (config.attribs != null) {
-    for (var op in config.attribs) {
-      switch (op) {
-        case 'set':
-          for (var attribKey in config.attribs[op]) {
-            node.setAttribute(attribKey, config.attribs[op][attribKey]);
-          }
-          break;
-        case 'unset':
-          for (var attribKey in config.attribs[op]) {
-            node.attributes.removeNamedItem(attribKey);
-          }
-          break;
-        default:
-          throw new Error('invalid \"modifyElement.attribs\" mode');
-      }
-    }
-  }
-
-  if (config.style != null) {
-    for (var op in config.style) {
-      switch (op) {
-        case 'set':
-          for (var styleKey in config.style[op]) {
-            node.style[styleKey] = config.style[op][styleKey];
-          }
-          break;
-        case 'unset':
-          for (var styleKey in config.style[op]) {
-            node.style.removeProperty(styleKey);
-          }
-          break;
-        default:
-          throw new Error('invalid \"modifyElement.style\" mode');
-      }
-    }
-  }
-
-  if (config.children != null) {
-    for (var op in config.children) {
-      switch (op) {
-        case 'add':
-          for (var index in config.children[op]) {
-            createAndAttachElement(node, config.children[op][index]);
-          }
-          break;
-        case 'remove':
-          for (var index in config.children[op]) {
-            var child = findChild(node, config.children[op][index]);
-            child.parentNode.removeChild(child);
-          }
-          break;
-        case 'modify':
-          for (var index in config.children[op]) {
-            modifyElement(
-              findChild(node, config.children[op][index].child),
-              config.children[op][index].changes);
-          }
-          break;
-        default:
-          throw new Error('invalid \"modifyElement.children\" mode');
-      }
-    }
-  }
-
-  if (config.text != null) {
-    for (var op in config.text) {
-      switch (op) {
-        case 'append':
-          node.innerText += config.text[op];
-          break;
-        case 'erase':
-          node.innerText = '';
-          break;
-        case 'prepend':
-          node.innerText = config.text[op] + node.innerText;
-          break;
-        case 'replace':
-          node.innerText = config.text[op];
-          break;
-        case 'slice':
-          if (config.text[op].end == null) {
-            node.innerText = node.innerText.slice(config.text[op].start);
-          } else {
-            node.innerText = node.innerText.slice(config.text[op].start, config.text[op].end);
-          }
-          break;
-        default:
-          throw new Error('invalid \"modifyElement.text\" mode');
-      }
-    }
-  }
-}
-
-function findChild(parent, config) {
-  switch (config.mode) {
-    case 'id':
-      return document.getElementById(config.key);
-    case 'tag':
-      return parent.getElementsByTagName(config.key.tag)[config.key.index];
-    case 'class':
-      return parent.getElementsByClassName(config.key.class)[config.key.index];
-    case 'query':
-      return parent.querySelectorAll(config.key.query)[config.key.index];
-    case 'index':
-      return parent.childNodes[config.key];
-    default:
-      throw new Error('Invalid \"findChild\" mode');
-  }
-}
-
-function createAndAttachElement(parent, config) {
-  if (Object.prototype.toString.call(config) === '[object String]') {
-    parent.innerText = config;
-  } else {
-    var node = document.createElement(config.tag);
-
-    if (config.id != null) {
-      node.id = config.id;
-    }
-
-    if (config.classes != null) {
-      for (var klass in config.classes) {
-        node.classList.add(klass);
-      }
-    }
-
-    if (config.attribs != null) {
-      for (var attribKey in config.attribs) {
-        if (attribKey !== 'style') {
-          node.setAttribute(attribKey, config.attribs[attribKey]);
-        }
-      }
-    }
-
-    if (config.style != null) {
-      for (var styleKey in config.style) {
-        node.style[styleKey] = config.style[styleKey];
-      }
-    }
-
-    if (config.children != null) {
-      config.children.forEach(function (newConfig, index) { 
-        createAndAttachElement(node, newConfig);
-      });
-    }
-
-    parent.appendChild(node);
-  }
-}
-
-function initialize(promptLabel) {
+function initializeUi(promptLabel) {
   createAndAttachElement(
     document.getElementById('console'),
    {
@@ -374,22 +177,32 @@ function initialize(promptLabel) {
           'padding-bottom': '10px'
         },
         children: [
-          elements.header,
-          elements.createPrompt(promptLabel)
+          components.header,
+          components.createPrompt(promptLabel)
         ]
       }
     ]
   });
 }
 
-module.exports = {
-  initialize: initialize,
-  modifyElement: modifyElement,
-};
+function transformUi(promptLabel, command) {
+  var changes = translate(promptLabel, interpretUi(command));
+  for (var index in changes) {
+    modifyElement(
+      document.getElementById('console'),
+      changes[index]);
+  }
+}
 
-},{"./elements":1,"./interpreter":8}],5:[function(require,module,exports){
-var modifyElement = require('./interpret').modifyElement;
-var elements      = require('./elements');
+module.exports = initialize;
+
+},{"../domUtility/interpret":8,"./components":1,"./interpret2":3,"./interpretAppState":4,"./interpretUi":5,"./interpreter":6}],3:[function(require,module,exports){
+var modifyElement = require('../domUtility/interpret').modifyElement;
+var components    = require('./components');
+
+var createOldPrompt      = components.createOldPrompt;
+var createOldPromptReply = components.createOldPromptReply;
+var createPrompt         = components.createPrompt;
 
 var _0to9 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -502,9 +315,9 @@ function translate (promptLabel, command) {
                         changes: {
                           children: {
                             add: [
-                              elements.createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
-                              elements.createOldPromptReply(command[outerKey][innerKey].response),
-                              elements.createPrompt(promptLabel)
+                              createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
+                              createOldPromptReply(command[outerKey][innerKey].response),
+                              createPrompt(promptLabel)
                             ]
                           }
                         }
@@ -549,7 +362,7 @@ module.exports = {
   translate: translate
 };
 
-},{"./elements":1,"./interpret":4}],6:[function(require,module,exports){
+},{"../domUtility/interpret":8,"./components":1}],4:[function(require,module,exports){
 function interpretAppState(command) {
   switch (command.commandType) {
     case 'addChar':
@@ -807,7 +620,7 @@ function interpretAppState(command) {
 
 module.exports = interpretAppState;
 
-},{}],7:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 function interpretUi(command) {
   switch (command.commandType) {
     case 'addChar':
@@ -899,7 +712,7 @@ function interpretUi(command) {
 
 module.exports = interpretUi;
 
-},{}],8:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 function addChar3(appState, char) {
   return { commandType: 'addChar', char: char };
 }
@@ -1023,7 +836,236 @@ var interpreter = {
 
 module.exports = interpreter;
 
+},{}],7:[function(require,module,exports){
+function createElement(tag) {
+  return function (config) {
+    if (config == null) {
+      config = {};
+    }
+
+    var element = { tag: tag };
+
+    for (var key in config) {
+      if (key === 'classes') {
+        element.classes = config.classes;
+      }
+      if (key === 'style') {
+        element.style = config.style;
+      }
+      if (key === 'attribs') {
+        element.attribs = config.attribs;
+      }
+    }
+
+    if (arguments.length > 1) {
+      element.children = Array.prototype.slice.call(arguments, 1);
+    }
+
+    return element;
+  };
+}
+
+var tags = { 'SPAN': true };
+
+var elementFactories = {};
+
+for (var tagName in tags) {
+  elementFactories[tagName] = createElement(tagName);
+}
+
+module.exports = elementFactories;
+
+},{}],8:[function(require,module,exports){
+function modifyElement(node, config) {
+  if (config.classes != null) {
+    for (var op in config.classes) {
+      switch (op) {
+        case 'add':
+          for (var klass in config.classes[op]) {
+            node.classList.add(klass);
+          }
+          break;
+        case 'remove':
+          for (var klass in config.classes[op]) {
+            node.classList.remove(klass);
+          }
+          break;
+        default:
+          throw new Error('invalid \"modifyElement.classes\" mode');
+      }
+    }
+  }
+
+  if (config.attribs != null) {
+    for (var op in config.attribs) {
+      switch (op) {
+        case 'set':
+          for (var attribKey in config.attribs[op]) {
+            node.setAttribute(attribKey, config.attribs[op][attribKey]);
+          }
+          break;
+        case 'unset':
+          for (var attribKey in config.attribs[op]) {
+            node.attributes.removeNamedItem(attribKey);
+          }
+          break;
+        default:
+          throw new Error('invalid \"modifyElement.attribs\" mode');
+      }
+    }
+  }
+
+  if (config.style != null) {
+    for (var op in config.style) {
+      switch (op) {
+        case 'set':
+          for (var styleKey in config.style[op]) {
+            node.style[styleKey] = config.style[op][styleKey];
+          }
+          break;
+        case 'unset':
+          for (var styleKey in config.style[op]) {
+            node.style.removeProperty(styleKey);
+          }
+          break;
+        default:
+          throw new Error('invalid \"modifyElement.style\" mode');
+      }
+    }
+  }
+
+  if (config.children != null) {
+    for (var op in config.children) {
+      switch (op) {
+        case 'add':
+          for (var index in config.children[op]) {
+            createAndAttachElement(node, config.children[op][index]);
+          }
+          break;
+        case 'remove':
+          for (var index in config.children[op]) {
+            var child = findChild(node, config.children[op][index]);
+            child.parentNode.removeChild(child);
+          }
+          break;
+        case 'modify':
+          for (var index in config.children[op]) {
+            modifyElement(
+              findChild(node, config.children[op][index].child),
+              config.children[op][index].changes);
+          }
+          break;
+        default:
+          throw new Error('invalid \"modifyElement.children\" mode');
+      }
+    }
+  }
+
+  if (config.text != null) {
+    for (var op in config.text) {
+      switch (op) {
+        case 'append':
+          node.innerText += config.text[op];
+          break;
+        case 'erase':
+          node.innerText = '';
+          break;
+        case 'prepend':
+          node.innerText = config.text[op] + node.innerText;
+          break;
+        case 'replace':
+          node.innerText = config.text[op];
+          break;
+        case 'slice':
+          if (config.text[op].end == null) {
+            node.innerText = node.innerText.slice(config.text[op].start);
+          } else {
+            node.innerText = node.innerText.slice(config.text[op].start, config.text[op].end);
+          }
+          break;
+        default:
+          throw new Error('invalid \"modifyElement.text\" mode');
+      }
+    }
+  }
+}
+
+function findChild(parent, config) {
+  switch (config.mode) {
+    case 'id':
+      return document.getElementById(config.key);
+    case 'tag':
+      return parent.getElementsByTagName(config.key.tag)[config.key.index];
+    case 'class':
+      return parent.getElementsByClassName(config.key.class)[config.key.index];
+    case 'query':
+      return parent.querySelectorAll(config.key.query)[config.key.index];
+    case 'index':
+      return parent.childNodes[config.key];
+    default:
+      throw new Error('Invalid \"findChild\" mode');
+  }
+}
+
+function createAndAttachElement(parent, config) {
+  if (Object.prototype.toString.call(config) === '[object String]') {
+    parent.innerText = config;
+  } else {
+    var node = document.createElement(config.tag);
+
+    if (config.id != null) {
+      node.id = config.id;
+    }
+
+    if (config.classes != null) {
+      for (var klass in config.classes) {
+        node.classList.add(klass);
+      }
+    }
+
+    if (config.attribs != null) {
+      for (var attribKey in config.attribs) {
+        if (attribKey !== 'style') {
+          node.setAttribute(attribKey, config.attribs[attribKey]);
+        }
+      }
+    }
+
+    if (config.style != null) {
+      for (var styleKey in config.style) {
+        node.style[styleKey] = config.style[styleKey];
+      }
+    }
+
+    if (config.children != null) {
+      config.children.forEach(function (newConfig, index) { 
+        createAndAttachElement(node, newConfig);
+      });
+    }
+
+    parent.appendChild(node);
+  }
+}
+
+module.exports = {
+  createAndAttachElement: createAndAttachElement,
+  modifyElement: modifyElement,
+};
+
 },{}],9:[function(require,module,exports){
+var initialize = require('./console/initialize');
+var interpretLisp = require('./mhlisp/mhlisp');
+
+var promptLabel = 'Lisp> ';
+
+var display = function (value) {};
+
+initialize({
+  promptLabel: promptLabel,
+  transform: interpretLisp(display)
+});
+
+},{"./console/initialize":2,"./mhlisp/mhlisp":10}],10:[function(require,module,exports){
 (function (global){
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ReactiveAspen = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 var getEnvironment, initializeRepl, serialize, _process;
@@ -3373,43 +3415,4 @@ module.exports = tokenize;
 },{"./commentSignal":2}]},{},[1])(1)
 });
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],10:[function(require,module,exports){
-function createElement(tag) {
-  return function (config) {
-    if (config == null) {
-      config = {};
-    }
-
-    var element = { tag: tag };
-
-    for (var key in config) {
-      if (key === 'classes') {
-        element.classes = config.classes;
-      }
-      if (key === 'style') {
-        element.style = config.style;
-      }
-      if (key === 'attribs') {
-        element.attribs = config.attribs;
-      }
-    }
-
-    if (arguments.length > 1) {
-      element.children = Array.prototype.slice.call(arguments, 1);
-    }
-
-    return element;
-  };
-}
-
-var tags = { 'SPAN': true };
-
-var elementFactories = {};
-
-for (var tagName in tags) {
-  elementFactories[tagName] = createElement(tagName);
-}
-
-module.exports = elementFactories;
-
-},{}]},{},[3]);
+},{}]},{},[9]);

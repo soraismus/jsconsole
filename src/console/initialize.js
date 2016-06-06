@@ -1,9 +1,11 @@
-var initialize        = require('./interpret').initialize;
+var createAndAttachElement = require('../domUtility/interpret').createAndAttachElement;
+var modifyElement          = require('../domUtility/interpret').modifyElement;
+
+var components        = require('./components');
 var translate         = require('./interpret2').translate;
 var interpreter       = require('./interpreter');
-var interpretAppState = require('./interpretAppState.js');
-var interpretUi       = require('./interpretUi.js');
-var modifyElement     = require('./interpret').modifyElement;
+var interpretAppState = require('./interpretAppState');
+var interpretUi       = require('./interpretUi');
 
 var appState = {
   history: {
@@ -53,15 +55,6 @@ function convertEventToCommand(event, transform) {
   }
 }
 
-function transformUi(promptLabel, command) {
-  var changes = translate(promptLabel, interpretUi(command));
-  for (var index in changes) {
-    modifyElement(
-      document.getElementById('console'),
-      changes[index]);
-  }
-}
-
 function handleEvent(promptLabel, transform) {
   return function (event) {
     var command = convertEventToCommand(event, transform);
@@ -70,7 +63,7 @@ function handleEvent(promptLabel, transform) {
   };
 }
 
-function _initialize(config) {
+function initialize(config) {
   var promptLabel = config.promptLabel;
   var transform   = config.transform;
 
@@ -80,8 +73,53 @@ function _initialize(config) {
     };
   }
 
-  initialize(promptLabel);
+  initializeUi(promptLabel);
   document.addEventListener('keypress', handleEvent(promptLabel, transform));
 }
 
-module.exports = _initialize;
+function initializeUi(promptLabel) {
+  createAndAttachElement(
+    document.getElementById('console'),
+   {
+    tag: 'div',
+    style: {
+      'top': '0px',
+      'left': '0px',
+      'right': '0px',
+      'bottom': '0px',
+      'position': 'absolute',
+      'overflow': 'auto'
+    },
+    children: [
+      {
+        tag: 'pre',
+        classes: {
+          'jsconsole': true
+        },
+        style: {
+          'margin': '0px',
+          'position': 'relative',
+          'min-height': '100%',
+          'box-sizing': 'border-box',
+          'padding': '10px',
+          'padding-bottom': '10px'
+        },
+        children: [
+          components.header,
+          components.createPrompt(promptLabel)
+        ]
+      }
+    ]
+  });
+}
+
+function transformUi(promptLabel, command) {
+  var changes = translate(promptLabel, interpretUi(command));
+  for (var index in changes) {
+    modifyElement(
+      document.getElementById('console'),
+      changes[index]);
+  }
+}
+
+module.exports = initialize;
