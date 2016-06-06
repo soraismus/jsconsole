@@ -5,10 +5,9 @@ var createOldPrompt      = components.createOldPrompt;
 var createOldPromptReply = components.createOldPromptReply;
 var createPrompt         = components.createPrompt;
 
-var _0to9 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-
 var magicNumber = 11;
 
+// ------------------------------------------------------------------------
 function identifyChild(mode) {
   return function(specifier, index) {
     var result = { mode: mode, key: { index: index }};
@@ -20,10 +19,13 @@ function identifyChild(mode) {
 var childByClass = identifyChild('class');
 var childByQuery = identifyChild('query');
 var childByTag   = identifyChild('tag');
+// ------------------------------------------------------------------------
 
 var oldPromptClass = 'jsconsole-old-prompt';
 var oldPromptResponseClass = 'jsconsole-old-prompt-response';
 var promptClass = 'jsconsole-prompt';
+var promptTextClass = 'jsconsole-prompt-text';
+var promptTextPostCursorClass = 'jsconsole-prompt-text-post-cursor';
 
 var firstSpanChild = childByTag('span', 0);
 
@@ -72,77 +74,84 @@ function interpret(appState, command) {
   }
 };
 
-// TODO: Refactor.
+
 function translate (promptLabel, command) {
-  var changes = [];
-  var prompt = 'jsconsole-prompt-text';
-  var postPrompt = 'jsconsole-prompt-text-post-cursor';
+  var cursorChanges;
+  var historyChanges;
   for (var outerKey in command) {
     switch (outerKey) {
       case 'cursor':
-        for (var innerKey in command[outerKey]) {
-          switch (innerKey) {
-            case 'pre':
-              changes.push({
-                children: {
-                  modify: [{
-                    child: childByClass(prompt, 0),
-                    changes: { text: command[outerKey][innerKey] }
-                  }]
-                }
-              });
-              break;
-            case 'post':
-              changes.push({
-                children: {
-                  modify: [{
-                    child: childByClass(postPrompt, 0),
-                    changes: { text: command[outerKey][innerKey] }
-                  }]
-                }
-              });
-              break;
-          }
-        }
+        cursorChanges =
+          translateCursor(promptLabel, command, outerKey);
       case 'history':
-        for (var innerKey in command[outerKey]) {
-          switch (innerKey) {
-            case 'fastForward':
-              break;
-            case 'rewind':
-              break;
-            case 'submit':
-              var removals = [childByClass(promptClass, 0)];
-
-              var additions = [
-                createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
-                createOldPromptReply(command[outerKey][innerKey].response),
-                createPrompt(promptLabel)
-              ];
-
-              if (command[outerKey][innerKey].display.length >= magicNumber) {
-                removals.push(
-                  childByClass(oldPromptClass, 0),
-                  childByClass(oldPromptResponseClass, 0));
-              }
-
-              changes.push({
-                children: {
-                  remove: removals,
-                  modify: [{
-                    child: childByQuery('div pre', 0),
-                    changes: { children: { add: additions }}
-                  }]
-                }
-              });
-
-              break;
-          }
-        }
+        historyChanges =
+          translateHistory(promptLabel, command, outerKey);
     }
   }
-  return changes;
+  return cursorChanges.concat(historyChanges);
 };
+
+function translateCursor(promptLabel, command, outerKey) {
+  for (var innerKey in command[outerKey]) {
+    switch (innerKey) {
+      case 'pre':
+        return [{
+          children: {
+            modify: [{
+              child: childByClass(promptTextClass, 0),
+              changes: { text: command[outerKey][innerKey] }
+            }]
+          }
+        }];
+      case 'post':
+        return [{
+          children: {
+            modify: [{
+              child: childByClass(promptTextPostCursorClass, 0),
+              changes: { text: command[outerKey][innerKey] }
+            }]
+          }
+        }];
+    }
+  }
+}
+
+function translateHistory(promptLabel, command, outerKey) {
+  for (var innerKey in command[outerKey]) {
+    switch (innerKey) {
+      case 'fastForward':
+        break;
+      case 'rewind':
+        break;
+      case 'submit':
+        return translateSubmittal(promptLabel, command, outerKey, innerKey);
+    }
+  }
+  return [];
+}
+
+function translateSubmittal(promptLabel, command, outerKey, innerKey) {
+  var removals = [childByClass(promptClass, 0)];
+  var additions = [
+    createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
+    createOldPromptReply(command[outerKey][innerKey].response),
+    createPrompt(promptLabel)
+  ];
+  if (command[outerKey][innerKey].display.length >= magicNumber) {
+    removals.push(
+      childByClass(oldPromptClass, 0),
+      childByClass(oldPromptResponseClass, 0));
+  }
+  return [{
+    children: {
+      remove: removals,
+      modify: [{
+        child: childByQuery('div pre', 0),
+        changes: { children: { add: additions }}
+      }]
+    }
+  }];
+}
 
 module.exports = {
   interpret: interpret,
