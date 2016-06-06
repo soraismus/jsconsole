@@ -7,6 +7,8 @@ var createPrompt         = components.createPrompt;
 
 var _0to9 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
+var magicNumber = 11;
+
 function identifyChild(mode) {
   return function(specifier, index) {
     var result = { mode: mode, key: { index: index }};
@@ -110,51 +112,30 @@ function translate (promptLabel, command) {
             case 'rewind':
               break;
             case 'submit':
-              if (command[outerKey][innerKey].display.length < 11) {
-                changes.push({
-                  children: {
-                    remove: [childByClass(promptClass, 0)],
-                    modify: [
-                      {
-                        child: childByQuery('div pre', 0),
-                        changes: {
-                          children: {
-                            add: [
-                              createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
-                              createOldPromptReply(command[outerKey][innerKey].response),
-                              createPrompt(promptLabel)
-                            ]
-                          }
-                        }
-                      }
-                    ]
-                  }
-                });
-              } else {
-                changes.push({
-                  children: {
-                    remove: [
-                      childByClass(oldPromptClass, 0),
-                      childByClass(oldPromptResponseClass, 0),
-                      childByClass(promptClass, 0),
-                    ],
-                    modify: [
-                      {
-                        child: childByQuery('div pre', 0),
-                        changes: {
-                          children: {
-                            add: [
-                              createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
-                              createOldPromptReply(command[outerKey][innerKey].response),
-                              createPrompt(promptLabel)
-                            ]
-                          }
-                        }
-                      }
-                    ]
-                  }
-                });
+              var removals = [childByClass(promptClass, 0)];
+
+              var additions = [
+                createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
+                createOldPromptReply(command[outerKey][innerKey].response),
+                createPrompt(promptLabel)
+              ];
+
+              if (command[outerKey][innerKey].display.length >= magicNumber) {
+                removals.push(
+                  childByClass(oldPromptClass, 0),
+                  childByClass(oldPromptResponseClass, 0));
               }
+
+              changes.push({
+                children: {
+                  remove: removals,
+                  modify: [{
+                    child: childByQuery('div pre', 0),
+                    changes: { children: { add: additions }}
+                  }]
+                }
+              });
+
               break;
           }
         }

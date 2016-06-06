@@ -309,76 +309,30 @@ function translate (promptLabel, command) {
             case 'rewind':
               break;
             case 'submit':
-              if (command[outerKey][innerKey].display.length < 11) {
-                changes.push({
-                  children: {
-                    remove: [childByClass(promptClass, 0)],
-                    modify: [
-                      {
-                        child: childByQuery('div pre', 0),
-                        changes: {
-                          children: {
-                            add: [
-                              createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
-                              createOldPromptReply(command[outerKey][innerKey].response),
-                              createPrompt(promptLabel)
-                            ]
-                          }
-                        }
-                      }
-                    ]
-                  }
-                });
-              } else {
-                changes.push({
-                  children: {
-                    remove: [
-                      childByClass(oldPromptClass, 0),
-                      childByClass(oldPromptResponseClass, 0),
-                      childByClass(promptClass, 0),
-                    ],
-                    modify: [
-                      {
-                        child: childByQuery('div pre', 0),
-                        changes: {
-                          children: {
-                            add: [
-                              createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
-                              createOldPromptReply(command[outerKey][innerKey].response),
-                              createPrompt(promptLabel)
-                            ]
-                          }
-                        }
-                      }
-                    ]
-                  }
-                });
+              var removals = [childByClass(promptClass, 0)];
 
-                /*
-                var display = command[outerKey][innerKey].display;
-                var oldPrompt = command[outerKey][innerKey].oldPrompt;
-                var response = command[outerKey][innerKey].response;
+              var additions = [
+                createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
+                createOldPromptReply(command[outerKey][innerKey].response),
+                createPrompt(promptLabel)
+              ];
 
-                var promptModifications = _0to9.map(function (i) {
-                  return modifyOldPrompt(i, promptLabel, display[i + 1][0]);
-                });
-
-                var promptResponseModifications = _0to9.map(function (i) {
-                  return modifyOldPromptResponse(i, display[i + 1][1]);
-                });
-
-                var modifications = promptModifications
-                  .concat(promptResponseModifications)
-                  .concat([
-                    modifyOldPrompt(10, promptLabel, oldPrompt),
-                    modifyOldPromptResponse(10, response)
-                  ]);
-
-                changes.push({
-                  children: { modify: modifications }
-                });
-                */
+              if (command[outerKey][innerKey].display.length >= 11) {
+                removals.push(
+                  childByClass(oldPromptClass, 0),
+                  childByClass(oldPromptResponseClass, 0));
               }
+
+              changes.push({
+                children: {
+                  remove: removals,
+                  modify: [{
+                    child: childByQuery('div pre', 0),
+                    changes: { children: { add: additions }}
+                  }]
+                }
+              });
+
               break;
           }
         }
