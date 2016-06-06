@@ -9,12 +9,32 @@ initialize(interpretLisp(display));
 },{"./initialize.js":3,"./mal-lisp.js":9}],2:[function(require,module,exports){
 var SPAN = require('./tags.js').SPAN;
 
-var promptLabelMessage = 'Lisp'
-var promptLabelText = promptLabelMessage + '> '
+var cursor               = { 'jsconsole-cursor': true };
+var header                = { 'jsconsole-header': true };
+var oldPrompt            = { 'jsconsole-old-prompt': true };
+var oldPromptResponse    = { 'jsconsole-old-prompt-response': true };
+var prompt               = { 'jsconsole-prompt': true };
+var promptText           = { 'jsconsole-prompt-text': true };
+var promptTextPostCursor = { 'jsconsole-prompt-text-post-cursor': true };
+
+var promptLabelMessage = 'Lisp';
+var promptLabelText = promptLabelMessage + '> ';
+
+function createOldPrompt(text) {
+  return SPAN(
+    { classes: oldPrompt, style: { 'font-weight': 'normal' }},
+    SPAN(null, promptLabelText + text + '\n'));
+}
+
+function createOldPromptReply(text) {
+  return SPAN(
+    { classes: oldPromptResponse },
+    SPAN(null, '==> ' + text + '\n'));
+}
 
 var cursor = SPAN(
   {
-    classes: { 'jsconsole-cursor': true },
+    classes: cursor,
     style: {
       'background-color': '#999',
       'color': 'transparent',
@@ -26,70 +46,38 @@ var cursor = SPAN(
   ' ');
 
 var emptySpan = SPAN(null, '');
+
 var header = SPAN(
-    { classes: { 'jsconsole-header': true }},
+    { classes: header },
     SPAN({ style: { 'color': '#0ff' }}, 'Welcome to MHLisp Console!\n'));
 
 var promptLabel = SPAN(null, promptLabelText);
-var promptText = SPAN({ classes: { 'jsconsole-prompt-text': true }});
+var promptText = SPAN({ classes: promptText });
 
 var relativeSpan = SPAN({
-  classes: { 'jsconsole-prompt-text-post-cursor': true },
+  classes: promptTextPostCursor,
   style: { 'position': 'relative' }
 });
 
 var prompt = SPAN(
   {
-    classes: { 'jsconsole-prompt': true },
+    classes: prompt,
     style: { 'color': '#0d0' }
   },
   emptySpan,
   SPAN(null, promptLabel, promptText, cursor, relativeSpan),
   emptySpan);
 
-function createOldPrompt(text) {
-  return {
-    tag: 'span',
-    classes: { 'jsconsole-old-prompt': true },
-    style: {
-      'font-weight': 'normal'
-    },
-    children: [
-      {
-        tag: 'span',
-        children: [promptLabelText + text + '\n']
-      }
-    ]
-  };
-}
-
-function createOldPromptReply(text) {
-  return {
-    tag: 'span',
-    classes: { 'jsconsole-old-prompt-response': true },
-    children: [
-      {
-        tag: 'span',
-        children: ['==> ' + text + '\n']
-      }
-    ]
-  };
-}
-
 module.exports = {
+  header: header,
+  prompt: prompt,
+
   createOldPrompt: createOldPrompt,
   createOldPromptReply: createOldPromptReply,
 
-  cursor: cursor,
-  emptySpan: emptySpan,
-  header: header,
-  prompt: prompt,
-  promptLabel: promptLabel,
-  promptText: promptText,
-  relativeSpan: relativeSpan,
-
-  promptLabelMessage: promptLabelMessage,
-  promptLabelText: promptLabelText,
+  //cursor: cursor,
+  //promptLabel: promptLabel,
+  //promptText: promptText,
 };
 
 },{"./tags.js":10}],3:[function(require,module,exports){
@@ -3381,11 +3369,6 @@ module.exports = tokenize;
 });
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],10:[function(require,module,exports){
-module.exports = {
-  div: 'div',
-  span: 'span'
-};
-
 function createElement(tag) {
   return function (config) {
     if (config == null) {
@@ -3414,10 +3397,7 @@ function createElement(tag) {
   };
 }
 
-var tags = {
-  'DIV': true,
-  'SPAN': true,
-};
+var tags = { 'SPAN': true };
 
 var elementFactories = {};
 

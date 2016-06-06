@@ -1,8 +1,3 @@
-module.exports = {
-  div: 'div',
-  span: 'span'
-};
-
 function createElement(tag) {
   return function (config) {
     if (config == null) {
@@ -31,10 +26,7 @@ function createElement(tag) {
   };
 }
 
-var tags = {
-  'DIV': true,
-  'SPAN': true,
-};
+var tags = { 'SPAN': true };
 
 var elementFactories = {};
 

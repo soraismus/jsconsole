@@ -1,11 +1,31 @@
 var SPAN = require('./tags.js').SPAN;
 
-var promptLabelMessage = 'Lisp'
-var promptLabelText = promptLabelMessage + '> '
+var cursor               = { 'jsconsole-cursor': true };
+var header                = { 'jsconsole-header': true };
+var oldPrompt            = { 'jsconsole-old-prompt': true };
+var oldPromptResponse    = { 'jsconsole-old-prompt-response': true };
+var prompt               = { 'jsconsole-prompt': true };
+var promptText           = { 'jsconsole-prompt-text': true };
+var promptTextPostCursor = { 'jsconsole-prompt-text-post-cursor': true };
+
+var promptLabelMessage = 'Lisp';
+var promptLabelText = promptLabelMessage + '> ';
+
+function createOldPrompt(text) {
+  return SPAN(
+    { classes: oldPrompt, style: { 'font-weight': 'normal' }},
+    SPAN(null, promptLabelText + text + '\n'));
+}
+
+function createOldPromptReply(text) {
+  return SPAN(
+    { classes: oldPromptResponse },
+    SPAN(null, '==> ' + text + '\n'));
+}
 
 var cursor = SPAN(
   {
-    classes: { 'jsconsole-cursor': true },
+    classes: cursor,
     style: {
       'background-color': '#999',
       'color': 'transparent',
@@ -17,68 +37,31 @@ var cursor = SPAN(
   ' ');
 
 var emptySpan = SPAN(null, '');
+
 var header = SPAN(
-    { classes: { 'jsconsole-header': true }},
+    { classes: header },
     SPAN({ style: { 'color': '#0ff' }}, 'Welcome to MHLisp Console!\n'));
 
 var promptLabel = SPAN(null, promptLabelText);
-var promptText = SPAN({ classes: { 'jsconsole-prompt-text': true }});
+var promptText = SPAN({ classes: promptText });
 
 var relativeSpan = SPAN({
-  classes: { 'jsconsole-prompt-text-post-cursor': true },
+  classes: promptTextPostCursor,
   style: { 'position': 'relative' }
 });
 
 var prompt = SPAN(
   {
-    classes: { 'jsconsole-prompt': true },
+    classes: prompt,
     style: { 'color': '#0d0' }
   },
   emptySpan,
   SPAN(null, promptLabel, promptText, cursor, relativeSpan),
   emptySpan);
 
-function createOldPrompt(text) {
-  return {
-    tag: 'span',
-    classes: { 'jsconsole-old-prompt': true },
-    style: {
-      'font-weight': 'normal'
-    },
-    children: [
-      {
-        tag: 'span',
-        children: [promptLabelText + text + '\n']
-      }
-    ]
-  };
-}
-
-function createOldPromptReply(text) {
-  return {
-    tag: 'span',
-    classes: { 'jsconsole-old-prompt-response': true },
-    children: [
-      {
-        tag: 'span',
-        children: ['==> ' + text + '\n']
-      }
-    ]
-  };
-}
-
 module.exports = {
   createOldPrompt: createOldPrompt,
   createOldPromptReply: createOldPromptReply,
-
-  cursor: cursor,
-  emptySpan: emptySpan,
   header: header,
   prompt: prompt,
-  promptLabel: promptLabel,
-  promptText: promptText,
-  relativeSpan: relativeSpan,
-
-  promptLabelMessage: promptLabelMessage,
-  promptLabelText: promptLabelText,
 };
