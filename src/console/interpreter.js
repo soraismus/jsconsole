@@ -17,6 +17,11 @@ function deleteRightChar(appState) {
     : { commandType: 'deleteRightChar' };
 }
 
+function display(appState, text) {
+  console.log("DISPLAY");
+  return { commandType: 'display', text: text };
+}
+
 function moveCursorLeft(appState) {
   console.log('moveCursorLeft');
   console.log('appState.cursor.pre', appState.cursor.pre);
@@ -113,6 +118,7 @@ var interpreter = {
   addChar: addChar,
   deleteLeftChar: deleteLeftChar,
   deleteRightChar: deleteRightChar,
+  display: display,
   fastForwardHistory: fastForwardHistory,
   moveCursorLeft: moveCursorLeft,
   moveCursorRight: moveCursorRight,

@@ -33,6 +33,11 @@ function interpretAppState(command) {
         };
       };
 
+    case 'display':
+      return function (appState) {
+        return appState;
+      };
+
     case 'moveCursorLeft':
       return function (appState) {
         return {

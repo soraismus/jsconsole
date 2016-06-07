@@ -29,6 +29,12 @@ var _prompt              = { 'jsconsole-prompt': true };
 var promptText           = { 'jsconsole-prompt-text': true };
 var promptTextPostCursor = { 'jsconsole-prompt-text-post-cursor': true };
 
+function createDisplay(text) {
+  return SPAN(
+    { classes: oldPrompt, style: { 'font-weight': 'normal' }},
+    SPAN(null, text + '\n'));
+}
+
 function createOldPrompt(text) {
   return SPAN(
     { classes: oldPrompt, style: { 'font-weight': 'normal' }},
@@ -79,9 +85,10 @@ var relativeSpan = SPAN({
 });
 
 module.exports = {
-  createPrompt: createPrompt,
+  createDisplay: createDisplay,
   createOldPrompt: createOldPrompt,
   createOldPromptReply: createOldPromptReply,
+  createPrompt: createPrompt,
   header: header,
 };
 
@@ -197,6 +204,7 @@ module.exports = initializeUi;
 },{"../domUtility/elements":10,"../domUtility/interpret":11,"./components":2}],5:[function(require,module,exports){
 var modifyElement        = require('../domUtility/interpret').modifyElement;
 var components           = require('./components');
+var createDisplay        = components.createDisplay;
 var createOldPrompt      = components.createOldPrompt;
 var createOldPromptReply = components.createOldPromptReply;
 var createPrompt         = components.createPrompt;
@@ -312,6 +320,10 @@ function translateHistory(promptLabel, command, outerKey) {
     switch (innerKey) {
       case 'fastForward':
         break;
+      case 'display':
+        console.log('TRANSLATE-HISTORY DISPLAY');
+        return translateDisplay(promptLabel, command[outerKey][innerKey].text);
+        break;
       case 'rewind':
         break;
       case 'submit':
@@ -319,6 +331,25 @@ function translateHistory(promptLabel, command, outerKey) {
     }
   }
   return [];
+}
+
+function translateDisplay(promptLabel, text) {
+  var removals = [
+    childByClass(promptClass, 0)
+  ];
+  var additions = [
+    createDisplay(text),
+    createPrompt(promptLabel)
+  ];
+  return [{
+    children: {
+      remove: removals,
+      modify: [{
+        child: childByQuery('div pre', 0),
+        changes: { children: { add: additions }}
+      }]
+    }
+  }];
 }
 
 function translateSubmittal(promptLabel, command, outerKey, innerKey) {
@@ -383,6 +414,11 @@ function interpretAppState(command) {
             post: appState.cursor.post.slice(1)
           }
         };
+      };
+
+    case 'display':
+      return function (appState) {
+        return appState;
       };
 
     case 'moveCursorLeft':
@@ -631,6 +667,13 @@ function interpretUi(command) {
         }
       };
 
+    case 'display':
+      return {
+        history: {
+          display: { text: command.text }
+        }
+      };
+
     case 'moveCursorLeft':
       return {
         cursor: {
@@ -693,7 +736,6 @@ function interpretUi(command) {
 
     case 'noOp':
       return {};
-
   }
 }
 
@@ -717,6 +759,11 @@ function deleteRightChar(appState) {
   return innerText.length == 0
     ? { commandType: 'noOp' }
     : { commandType: 'deleteRightChar' };
+}
+
+function display(appState, text) {
+  console.log("DISPLAY");
+  return { commandType: 'display', text: text };
 }
 
 function moveCursorLeft(appState) {
@@ -815,6 +862,7 @@ var interpreter = {
   addChar: addChar,
   deleteLeftChar: deleteLeftChar,
   deleteRightChar: deleteRightChar,
+  display: display,
   fastForwardHistory: fastForwardHistory,
   moveCursorLeft: moveCursorLeft,
   moveCursorRight: moveCursorRight,

@@ -1,5 +1,6 @@
 var modifyElement        = require('../domUtility/interpret').modifyElement;
 var components           = require('./components');
+var createDisplay        = components.createDisplay;
 var createOldPrompt      = components.createOldPrompt;
 var createOldPromptReply = components.createOldPromptReply;
 var createPrompt         = components.createPrompt;
@@ -115,6 +116,10 @@ function translateHistory(promptLabel, command, outerKey) {
     switch (innerKey) {
       case 'fastForward':
         break;
+      case 'display':
+        console.log('TRANSLATE-HISTORY DISPLAY');
+        return translateDisplay(promptLabel, command[outerKey][innerKey].text);
+        break;
       case 'rewind':
         break;
       case 'submit':
@@ -122,6 +127,25 @@ function translateHistory(promptLabel, command, outerKey) {
     }
   }
   return [];
+}
+
+function translateDisplay(promptLabel, text) {
+  var removals = [
+    childByClass(promptClass, 0)
+  ];
+  var additions = [
+    createDisplay(text),
+    createPrompt(promptLabel)
+  ];
+  return [{
+    children: {
+      remove: removals,
+      modify: [{
+        child: childByQuery('div pre', 0),
+        changes: { children: { add: additions }}
+      }]
+    }
+  }];
 }
 
 function translateSubmittal(promptLabel, command, outerKey, innerKey) {

@@ -12,6 +12,12 @@ var _prompt              = { 'jsconsole-prompt': true };
 var promptText           = { 'jsconsole-prompt-text': true };
 var promptTextPostCursor = { 'jsconsole-prompt-text-post-cursor': true };
 
+function createDisplay(text) {
+  return SPAN(
+    { classes: oldPrompt, style: { 'font-weight': 'normal' }},
+    SPAN(null, text + '\n'));
+}
+
 function createOldPrompt(text) {
   return SPAN(
     { classes: oldPrompt, style: { 'font-weight': 'normal' }},
@@ -62,8 +68,9 @@ var relativeSpan = SPAN({
 });
 
 module.exports = {
-  createPrompt: createPrompt,
+  createDisplay: createDisplay,
   createOldPrompt: createOldPrompt,
   createOldPromptReply: createOldPromptReply,
+  createPrompt: createPrompt,
   header: header,
 };

@@ -21,6 +21,13 @@ function interpretUi(command) {
         }
       };
 
+    case 'display':
+      return {
+        history: {
+          display: { text: command.text }
+        }
+      };
+
     case 'moveCursorLeft':
       return {
         cursor: {
@@ -83,7 +90,6 @@ function interpretUi(command) {
 
     case 'noOp':
       return {};
-
   }
 }
 
