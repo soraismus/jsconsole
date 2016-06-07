@@ -21,13 +21,25 @@ var emptyString = '';
 
 var space = ' ';
 
-var _cursor              = { 'jsconsole-cursor': true };
-var _header              = { 'jsconsole-header': true };
-var oldPrompt            = { 'jsconsole-old-prompt': true };
-var oldPromptResponse    = { 'jsconsole-old-prompt-response': true };
-var _prompt              = { 'jsconsole-prompt': true };
-var promptText           = { 'jsconsole-prompt-text': true };
+var _cursor = { 'jsconsole-cursor': true };
+var _header = { 'jsconsole-header': true };
+var promptText = { 'jsconsole-prompt-text': true };
 var promptTextPostCursor = { 'jsconsole-prompt-text-post-cursor': true };
+
+var oldPrompt = {
+  'jsconsole-old-prompt': true,
+  'jsconsole-line-item': true
+};
+
+var oldPromptResponse = {
+  'jsconsole-old-prompt-response': true,
+  'jsconsole-line-item': true
+};
+
+var _prompt = {
+  'jsconsole-prompt': true,
+  'jsconsole-line-item': true
+};
 
 function createDisplay(text) {
   return SPAN(
@@ -100,6 +112,7 @@ var interpretAppState = require('./interpretAppState');
 var interpretUi       = require('./interpretUi');
 var modifyElement     = require('../domUtility/interpret').modifyElement;
 var translate         = require('./interpret2').translate;
+var translateDisplay  = require('./interpret2').translateDisplay;
 
 var backspace =  8;
 var _delete   = 46;
@@ -132,8 +145,19 @@ function convertEventToCommand(event, transform) {
       event.preventDefault();
       return interpreter.deleteRightChar(appState);
     default:
+      console.log(event.charCode);
+      if (event.charCode === 97)
+      {
+        display('Lisp>', 'HELLO, WORLD');
+      }
       return interpreter.addChar(appState, String.fromCharCode(event.charCode));
   }
+}
+
+function display(promptLabel, text) {
+  modifyElement(
+    document.getElementById('console'),
+    translateDisplay(promptLabel, text)[0]);
 }
 
 function handleEvent(promptLabel, transform) {
@@ -215,6 +239,7 @@ var childByTag           = childrenUtility.childByTag;
 
 var magicNumber = 11;
 
+var lineItemClass             = 'jsconsole-line-item';
 var oldPromptClass            = 'jsconsole-old-prompt';
 var oldPromptResponseClass    = 'jsconsole-old-prompt-response';
 var promptClass               = 'jsconsole-prompt';
@@ -341,6 +366,9 @@ function translateDisplay(promptLabel, text) {
     createDisplay(text),
     createPrompt(promptLabel)
   ];
+  //if (command[outerKey][innerKey].display.length >= magicNumber) {
+  //  removals.push(childByClass(lineItemClass, 0));
+  //}
   return [{
     children: {
       remove: removals,
@@ -361,8 +389,8 @@ function translateSubmittal(promptLabel, command, outerKey, innerKey) {
   ];
   if (command[outerKey][innerKey].display.length >= magicNumber) {
     removals.push(
-      childByClass(oldPromptClass, 0),
-      childByClass(oldPromptResponseClass, 0));
+      childByClass(lineItemClass, 0),
+      childByClass(lineItemClass, 0));
   }
   return [{
     children: {
@@ -377,7 +405,8 @@ function translateSubmittal(promptLabel, command, outerKey, innerKey) {
 
 module.exports = {
   interpret: interpret,
-  translate: translate
+  translate: translate,
+  translateDisplay: translateDisplay
 };
 
 },{"../domUtility/children":9,"../domUtility/interpret":11,"./components":2}],6:[function(require,module,exports){

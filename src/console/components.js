@@ -4,13 +4,25 @@ var emptyString = '';
 
 var space = ' ';
 
-var _cursor              = { 'jsconsole-cursor': true };
-var _header              = { 'jsconsole-header': true };
-var oldPrompt            = { 'jsconsole-old-prompt': true };
-var oldPromptResponse    = { 'jsconsole-old-prompt-response': true };
-var _prompt              = { 'jsconsole-prompt': true };
-var promptText           = { 'jsconsole-prompt-text': true };
+var _cursor = { 'jsconsole-cursor': true };
+var _header = { 'jsconsole-header': true };
+var promptText = { 'jsconsole-prompt-text': true };
 var promptTextPostCursor = { 'jsconsole-prompt-text-post-cursor': true };
+
+var oldPrompt = {
+  'jsconsole-old-prompt': true,
+  'jsconsole-line-item': true
+};
+
+var oldPromptResponse = {
+  'jsconsole-old-prompt-response': true,
+  'jsconsole-line-item': true
+};
+
+var _prompt = {
+  'jsconsole-prompt': true,
+  'jsconsole-line-item': true
+};
 
 function createDisplay(text) {
   return SPAN(

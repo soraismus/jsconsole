@@ -11,6 +11,7 @@ var childByTag           = childrenUtility.childByTag;
 
 var magicNumber = 11;
 
+var lineItemClass             = 'jsconsole-line-item';
 var oldPromptClass            = 'jsconsole-old-prompt';
 var oldPromptResponseClass    = 'jsconsole-old-prompt-response';
 var promptClass               = 'jsconsole-prompt';
@@ -137,6 +138,9 @@ function translateDisplay(promptLabel, text) {
     createDisplay(text),
     createPrompt(promptLabel)
   ];
+  //if (command[outerKey][innerKey].display.length >= magicNumber) {
+  //  removals.push(childByClass(lineItemClass, 0));
+  //}
   return [{
     children: {
       remove: removals,
@@ -157,8 +161,8 @@ function translateSubmittal(promptLabel, command, outerKey, innerKey) {
   ];
   if (command[outerKey][innerKey].display.length >= magicNumber) {
     removals.push(
-      childByClass(oldPromptClass, 0),
-      childByClass(oldPromptResponseClass, 0));
+      childByClass(lineItemClass, 0),
+      childByClass(lineItemClass, 0));
   }
   return [{
     children: {
@@ -173,5 +177,6 @@ function translateSubmittal(promptLabel, command, outerKey, innerKey) {
 
 module.exports = {
   interpret: interpret,
-  translate: translate
+  translate: translate,
+  translateDisplay: translateDisplay
 };

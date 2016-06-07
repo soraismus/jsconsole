@@ -5,6 +5,7 @@ var interpretAppState = require('./interpretAppState');
 var interpretUi       = require('./interpretUi');
 var modifyElement     = require('../domUtility/interpret').modifyElement;
 var translate         = require('./interpret2').translate;
+var translateDisplay  = require('./interpret2').translateDisplay;
 
 var backspace =  8;
 var _delete   = 46;
@@ -37,8 +38,19 @@ function convertEventToCommand(event, transform) {
       event.preventDefault();
       return interpreter.deleteRightChar(appState);
     default:
+      console.log(event.charCode);
+      if (event.charCode === 97)
+      {
+        display('Lisp>', 'HELLO, WORLD');
+      }
       return interpreter.addChar(appState, String.fromCharCode(event.charCode));
   }
+}
+
+function display(promptLabel, text) {
+  modifyElement(
+    document.getElementById('console'),
+    translateDisplay(promptLabel, text)[0]);
 }
 
 function handleEvent(promptLabel, transform) {
