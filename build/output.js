@@ -184,7 +184,10 @@ function transformUi(promptLabel, command) {
   }
 }
 
-module.exports = initialize;
+module.exports = {
+  display: display,
+  initialize: initialize
+};
 
 },{"../domUtility/interpret":11,"./appState":1,"./initializeUi":4,"./interpret2":5,"./interpretAppState":6,"./interpretUi":7,"./interpreter":8}],4:[function(require,module,exports){
 var components             = require('./components');
@@ -1137,12 +1140,15 @@ module.exports = {
 };
 
 },{}],12:[function(require,module,exports){
-var initialize = require('./console/initialize');
+var _display      = require('./console/initialize').display;
+var initialize    = require('./console/initialize').initialize;
 var interpretLisp = require('./mhlisp/mhlisp');
 
 var promptLabel = 'Lisp> ';
 
-var display = function (value) {};
+var display = function (value) {
+  _display(promptLabel, value);
+};
 
 initialize({
   promptLabel: promptLabel,

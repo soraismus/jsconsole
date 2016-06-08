@@ -77,4 +77,7 @@ function transformUi(promptLabel, command) {
   }
 }
 
-module.exports = initialize;
+module.exports = {
+  display: display,
+  initialize: initialize
+};
