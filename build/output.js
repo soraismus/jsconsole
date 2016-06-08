@@ -149,7 +149,9 @@ function convertEventToCommand(event, transform) {
       if (event.charCode === 97)
       {
         display('Lisp>', 'HELLO, WORLD');
+        return;
       }
+
       return interpreter.addChar(appState, String.fromCharCode(event.charCode));
   }
 }
@@ -375,10 +377,20 @@ function translateDisplay(promptLabel, text) {
   return [{
     children: {
       remove: removals,
-      modify: [{
-        child: childByQuery('div pre', 0),
-        changes: { children: { add: additions }}
-      }]
+      modify: [
+        {
+          child: childByQuery('div pre', 0),
+          changes: { children: { add: additions }}
+        },
+        {
+          child: childByClass(promptTextClass, 0),
+          changes: { text: { erase: true }},
+        },
+        {
+          child: childByClass(promptTextPostCursorClass, 0),
+          changes: { text: { erase: true }},
+        }
+      ]
     }
   }];
 }
@@ -398,10 +410,12 @@ function translateSubmittal(promptLabel, command, outerKey, innerKey) {
   return [{
     children: {
       remove: removals,
-      modify: [{
-        child: childByQuery('div pre', 0),
-        changes: { children: { add: additions }}
-      }]
+      modify: [
+        {
+          child: childByQuery('div pre', 0),
+          changes: { children: { add: additions }}
+        }
+      ]
     }
   }];
 }

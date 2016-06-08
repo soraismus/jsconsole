@@ -42,7 +42,9 @@ function convertEventToCommand(event, transform) {
       if (event.charCode === 97)
       {
         display('Lisp>', 'HELLO, WORLD');
+        return;
       }
+
       return interpreter.addChar(appState, String.fromCharCode(event.charCode));
   }
 }
