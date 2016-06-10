@@ -109,9 +109,13 @@ function submit(appState, transform) {
   return {
     commandType: 'submit',
     oldPrompt: text,
-    response: transform(text),
+    response: getLast(transform(text)).value,
     display: appState.history.display
   };
+}
+
+function getLast(array) {
+  return array[array.length - 1];
 }
 
 var interpreter = {

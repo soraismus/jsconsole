@@ -9,6 +9,11 @@ var _header = { 'jsconsole-header': true };
 var promptText = { 'jsconsole-prompt-text': true };
 var promptTextPostCursor = { 'jsconsole-prompt-text-post-cursor': true };
 
+var display = {
+  'jsconsole-display': true,
+  'jsconsole-line-item': true
+};
+
 var oldPrompt = {
   'jsconsole-old-prompt': true,
   'jsconsole-line-item': true
@@ -26,7 +31,7 @@ var _prompt = {
 
 function createDisplay(text) {
   return SPAN(
-    { classes: oldPrompt, style: { 'font-weight': 'normal' }},
+    { classes: display, style: { 'font-weight': 'normal' }},
     SPAN(null, text + '\n'));
 }
 

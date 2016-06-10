@@ -1,33 +1,60 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ReactiveAspen = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
-var getEnvironment, initializeRepl, serialize, _process;
+var display, environment, getEnvironment, repl, serialize, standard, _process, _repl, _serialize,
+  __hasProp = {}.hasOwnProperty;
 
 getEnvironment = _dereq_('./environment');
 
 _process = _dereq_('./process');
 
-serialize = _dereq_('./serialize');
+_serialize = _dereq_('./serialize');
 
-initializeRepl = function(display) {
-  var environment, repl, standard, _repl;
-  environment = getEnvironment(display);
-  repl = function(envs, jsString) {
-    var e;
-    try {
-      return serialize(_process(envs)(jsString));
-    } catch (_error) {
-      e = _error;
-      return "repl error: (" + (serialize(e)) + " + )";
-    }
+display = function(malValue) {
+  return {
+    effect: {
+      type: 'display'
+    },
+    value: malValue
   };
-  _repl = function(jsString) {
-    return repl([environment], jsString);
-  };
-  standard = "(do\n  (def! fix*\n    (fn* (f)\n      ( (fn* (x) (f (fn* (& ys) (apply (x x) ys))))\n        (fn* (x) (f (fn* (& ys) (apply (x x) ys)))))))\n\n  (def! y* (macro* (f x) `(~f (y* ~f) ~x)))\n\n  (def! memfix*\n    (fn* (f)\n      (let* (cache {})\n        (\n          (fn* (x cache)\n            (f\n              (fn* (z)\n                (if (contains? cache z)\n                  (get cache z)\n                  (let* (result ((fn* (y) ((x x cache) y)) z))\n                    (do (set! cache z result) result))))\n              cache))\n          (fn* (x cache)\n            (f\n              (fn* (z)\n                (if (contains? cache z)\n                  (get cache z)\n                  (let* (result ((fn* (y) ((x x cache) y)) z))\n                    (do (set! cache z result) result))))\n              cache))\n          cache))))\n\n  (def! 1st car)\n  (def! 2nd (fn* (xs) (nth 1 xs)))\n  (def! 3rd (fn* (xs) (nth 2 xs)))\n\n  (def! swap! (macro* (atom & xs)\n    (if (empty? xs)\n      atom\n      `(let* (-atom- ~atom)\n        (do\n          (reset! -atom- (~(car xs) (deref -atom-) ~@(cdr xs)))\n          (deref -atom-))))))\n\n  (def! *gensym-counter* (atom 0))\n\n  (def! gensym (fn* ()\n    (symbol (str \"G__\" (swap! *gensym-counter* incr)))))\n\n  (def! or (macro* (& xs)\n    (if (empty? xs)\n      false\n      (let* (-query- (gensym))\n        `(let* (~-query- ~(car xs))\n          (if ~-query- \n            ~-query-\n            (or ~@(cdr xs))))))))\n\n  (def! and (macro* (& xs)\n    (if (empty? xs)\n      true\n      (let* (-query- (gensym))\n        `(let* (~-query- ~(car xs))\n          (if ~-query-\n            (and ~@(cdr xs))\n            false))))))\n\n  (def! cond (macro* (& xs)\n    (if (empty? xs)\n      nil\n      (if (empty? (cdr xs))\n        (throw \"`cond` requires an even number of forms.\")\n        (let* (-query- (gensym))\n          `(let* (~-query- ~(car xs))\n            (if ~-query-\n              ~(2nd xs)\n              (cond ~@(cdr (cdr xs))))))))))\n\n  (def! loop (macro* (form0 form1)\n    `(let* (loop (memfix* (fn* (loop) (fn* (~(1st form0)) ~form1)))) (loop ~(2nd form0)))))\n\n  (def! -> (macro* (& xs)\n    (if (empty? xs)\n      nil\n      (let* (x  (car xs)\n            xs (cdr xs))\n        (if (empty? xs)\n          x\n          (let* (form  (car xs)\n                forms (cdr xs))\n            (if (empty? forms)\n              (if (list? form)\n                (if (= (symbol \"fn*\") (car form))\n                  `(~form ~x)\n                  `(~(car form) ~x ~@(cdr form)))\n                (list form x))\n              `(-> (-> ~x ~form) ~@forms))))))))\n\n  (def! ->> (macro* (& xs)\n    (if (empty? xs)\n      nil\n      (let* (x  (car xs)\n            xs (cdr xs))\n        (if (empty? xs)\n          x\n          (let* (form  (car xs)\n                forms (cdr xs))\n            (if (empty? forms)\n              (if (list? form)\n                (if (= (symbol \"fn*\") (car form))\n                  `(~form ~x)\n                  `(~@form  ~x))\n                (list form x))\n              `(->> (->> ~x ~form) ~@forms))))))))\n\n  (def! ->* (macro* (& xs) `(fn* (-x-) (-> -x- ~@xs))))\n\n  (def! ->>* (macro* (& xs) `(fn* (-x-) (->> -x- ~@xs))))\n\n  (def! not (fn* (x) (if x false true)))\n  (def! incr  (->* (+ 1)))\n  (def! decr  (->* (- 1)))\n  (def! zero? (->* (= 0)))\n\n  (def! identity (fn* (x) x))\n\n  (def! constant-fn (fn* (x) (fn* (y) x)))\n\n  (def! call-on (fn* (& xs) (fn* (fn) (apply fn xs))))\n\n  (def! reduce\n    (fn* (seed f xs)\n      (if (empty? xs)\n        seed\n        (reduce (f seed (car xs)) f (cdr xs)))))\n\n  (def! every?\n    (fn* (pred xs)\n      (if (empty? xs)\n        true\n        (if (pred (car xs))\n          (every? pred (cdr xs))\n          false))))\n\n  (def! some?\n    (fn* (pred xs)\n      (if (empty? xs)\n        false\n        (if (pred (car xs))\n          true\n          (some? pred (cdr xs))))))\n\n  (def! letmemrec* (macro* (alias expr)\n    `(let* (~(car alias) (memfix* (fn* (~(car alias)) ~(2nd alias)))) ~expr)))\n\n  (def! skip (fn* (nbr xs)\n    (letrec* (-skip- (fn* (ys)\n      (let* (nbr (car ys)\n            xs (2nd ys))\n        (cond\n          (= 0 nbr) xs\n          (= 1 nbr) (cdr xs)\n          \"default\" (-skip- (list (decr nbr) (cdr xs)))))))\n      (-skip- (list nbr xs)))))\n\n  (def! . (macro* (x key & xs)\n    `((get ~x ~key) ~@xs)))\n\n  (def! .. (fn* (lo hi)\n    (letrec* (-..- (fn* (ys)\n      (let* (lo     (1st ys)\n            hi     (2nd ys)\n            -list- (3rd ys))\n        (if (= lo hi)\n          (cons hi -list-)\n          (-..- (list lo (decr hi) (cons hi -list-)))))))\n      (-..- (list lo hi '())))))\n)";
-  _repl(standard);
-  return _repl;
 };
 
-module.exports = initializeRepl;
+repl = function(envs, jsString) {
+  var e;
+  try {
+    return serialize(_process(envs)(jsString));
+  } catch (_error) {
+    e = _error;
+    return "repl error: (" + (serialize(e)) + " + )";
+  }
+};
+
+_repl = function(jsString) {
+  return repl([environment], jsString);
+};
+
+serialize = function(results) {
+  return results.map(function(result) {
+    var key, value, _result;
+    _result = {};
+    for (key in result) {
+      if (!__hasProp.call(result, key)) continue;
+      value = result[key];
+      if (key === 'effect') {
+        _result[key] = value;
+      } else {
+        _result[key] = _serialize(value);
+      }
+    }
+    return _result;
+  });
+};
+
+environment = getEnvironment(display);
+
+standard = "(do\n  (def! fix*\n    (fn* (f)\n      ( (fn* (x) (f (fn* (& ys) (apply (x x) ys))))\n        (fn* (x) (f (fn* (& ys) (apply (x x) ys)))))))\n\n  (def! y* (macro* (f x) `(~f (y* ~f) ~x)))\n\n  (def! memfix*\n    (fn* (f)\n      (let* (cache {})\n        (\n          (fn* (x cache)\n            (f\n              (fn* (z)\n                (if (contains? cache z)\n                  (get cache z)\n                  (let* (result ((fn* (y) ((x x cache) y)) z))\n                    (do (set! cache z result) result))))\n              cache))\n          (fn* (x cache)\n            (f\n              (fn* (z)\n                (if (contains? cache z)\n                  (get cache z)\n                  (let* (result ((fn* (y) ((x x cache) y)) z))\n                    (do (set! cache z result) result))))\n              cache))\n          cache))))\n\n  (def! 1st car)\n  (def! 2nd (fn* (xs) (nth 1 xs)))\n  (def! 3rd (fn* (xs) (nth 2 xs)))\n\n  (def! swap! (macro* (atom & xs)\n    (if (empty? xs)\n      atom\n      `(let* (-atom- ~atom)\n        (do\n          (reset! -atom- (~(car xs) (deref -atom-) ~@(cdr xs)))\n          (deref -atom-))))))\n\n  (def! *gensym-counter* (atom 0))\n\n  (def! gensym (fn* ()\n    (symbol (str \"G__\" (swap! *gensym-counter* incr)))))\n\n  (def! or (macro* (& xs)\n    (if (empty? xs)\n      false\n      (let* (-query- (gensym))\n        `(let* (~-query- ~(car xs))\n          (if ~-query- \n            ~-query-\n            (or ~@(cdr xs))))))))\n\n  (def! and (macro* (& xs)\n    (if (empty? xs)\n      true\n      (let* (-query- (gensym))\n        `(let* (~-query- ~(car xs))\n          (if ~-query-\n            (and ~@(cdr xs))\n            false))))))\n\n  (def! cond (macro* (& xs)\n    (if (empty? xs)\n      nil\n      (if (empty? (cdr xs))\n        (throw \"`cond` requires an even number of forms.\")\n        (let* (-query- (gensym))\n          `(let* (~-query- ~(car xs))\n            (if ~-query-\n              ~(2nd xs)\n              (cond ~@(cdr (cdr xs))))))))))\n\n  (def! loop (macro* (form0 form1)\n    `(let* (loop (memfix* (fn* (loop) (fn* (~(1st form0)) ~form1)))) (loop ~(2nd form0)))))\n\n  (def! -> (macro* (& xs)\n    (if (empty? xs)\n      nil\n      (let* (x  (car xs)\n            xs (cdr xs))\n        (if (empty? xs)\n          x\n          (let* (form  (car xs)\n                forms (cdr xs))\n            (if (empty? forms)\n              (if (list? form)\n                (if (= (symbol \"fn*\") (car form))\n                  `(~form ~x)\n                  `(~(car form) ~x ~@(cdr form)))\n                (list form x))\n              `(-> (-> ~x ~form) ~@forms))))))))\n\n  (def! ->> (macro* (& xs)\n    (if (empty? xs)\n      nil\n      (let* (x  (car xs)\n            xs (cdr xs))\n        (if (empty? xs)\n          x\n          (let* (form  (car xs)\n                forms (cdr xs))\n            (if (empty? forms)\n              (if (list? form)\n                (if (= (symbol \"fn*\") (car form))\n                  `(~form ~x)\n                  `(~@form  ~x))\n                (list form x))\n              `(->> (->> ~x ~form) ~@forms))))))))\n\n  (def! ->* (macro* (& xs) `(fn* (-x-) (-> -x- ~@xs))))\n\n  (def! ->>* (macro* (& xs) `(fn* (-x-) (->> -x- ~@xs))))\n\n  (def! not (fn* (x) (if x false true)))\n  (def! incr  (->* (+ 1)))\n  (def! decr  (->* (- 1)))\n  (def! zero? (->* (= 0)))\n\n  (def! identity (fn* (x) x))\n\n  (def! constant-fn (fn* (x) (fn* (y) x)))\n\n  (def! call-on (fn* (& xs) (fn* (fn) (apply fn xs))))\n\n  (def! reduce\n    (fn* (seed f xs)\n      (if (empty? xs)\n        seed\n        (reduce (f seed (car xs)) f (cdr xs)))))\n\n  (def! every?\n    (fn* (pred xs)\n      (if (empty? xs)\n        true\n        (if (pred (car xs))\n          (every? pred (cdr xs))\n          false))))\n\n  (def! some?\n    (fn* (pred xs)\n      (if (empty? xs)\n        false\n        (if (pred (car xs))\n          true\n          (some? pred (cdr xs))))))\n\n  (def! letmemrec* (macro* (alias expr)\n    `(let* (~(car alias) (memfix* (fn* (~(car alias)) ~(2nd alias)))) ~expr)))\n\n  (def! skip (fn* (nbr xs)\n    (letrec* (-skip- (fn* (ys)\n      (let* (nbr (car ys)\n            xs (2nd ys))\n        (cond\n          (= 0 nbr) xs\n          (= 1 nbr) (cdr xs)\n          \"default\" (-skip- (list (decr nbr) (cdr xs)))))))\n      (-skip- (list nbr xs)))))\n\n  (def! . (macro* (x key & xs)\n    `((get ~x ~key) ~@xs)))\n\n  (def! .. (fn* (lo hi)\n    (letrec* (-..- (fn* (ys)\n      (let* (lo     (1st ys)\n            hi     (2nd ys)\n            -list- (3rd ys))\n        (if (= lo hi)\n          (cons hi -list-)\n          (-..- (list lo (decr hi) (cons hi -list-)))))))\n      (-..- (list lo hi '())))))\n)";
+
+_repl(standard);
+
+module.exports = _repl;
 
 
 },{"./environment":4,"./process":16,"./serialize":17}],2:[function(_dereq_,module,exports){
@@ -96,7 +123,7 @@ module.exports = {
 
 },{}],4:[function(_dereq_,module,exports){
 (function (process){
-var car, cdr, circumpendQuotes, concat, createMalAtom, createMalBoolean, createMalCoreFunction, createMalIdentifier, createMalIgnore, createMalIndex, createMalList, createMalNumber, createMalString, createMalSymbol, drop, empty_question_, equal_question_, evaluate, extractJsValue, fromArray, fromJsObject, fromMalIndex, getEnvironment, interpret, jsNaN_question_, jsNumber_question_, jsString_question_, last, malAtom_question_, malBoolean_question_, malCoreFunction_question_, malFalse, malFalse_question_, malIgnore, malIndex_question_, malList_question_, malMacro_question_, malNil, malNil_question_, malNumber_question_, malString_question_, malSymbol_question_, malTrue, malTrue_question_, malUserFunction_question_, next, recurse, reduce, reverse, serialize, take, toArray, toPartialArray, _process_,
+var car, cdr, circumpendQuotes, concat, createMalAtom, createMalBoolean, createMalCoreEffectfulFunction, createMalCorePureFunction, createMalIdentifier, createMalIgnore, createMalIndex, createMalList, createMalNumber, createMalString, createMalSymbol, drop, empty_question_, equal_question_, evaluate, extractJsValue, fromArray, fromJsObject, fromMalIndex, getEnvironment, interpret, jsNaN_question_, jsNumber_question_, jsString_question_, last, malAtom_question_, malBoolean_question_, malCoreEffectfulFunction_question_, malCorePureFunction_question_, malFalse, malFalse_question_, malIgnore, malIndex_question_, malList_question_, malMacro_question_, malNil, malNil_question_, malNumber_question_, malString_question_, malSymbol_question_, malTrue, malTrue_question_, malUserEffectfulFunction_question_, malUserPureFunction_question_, next, recurse, reduce, reverse, serialize, take, toArray, toPartialArray, _process_,
   __hasProp = {}.hasOwnProperty,
   __slice = [].slice;
 
@@ -112,7 +139,9 @@ createMalAtom = _dereq_('./mal-type-utilities').createMalAtom;
 
 createMalBoolean = _dereq_('./mal-type-utilities').createMalBoolean;
 
-createMalCoreFunction = _dereq_('./mal-type-utilities').createMalCoreFunction;
+createMalCoreEffectfulFunction = _dereq_('./mal-type-utilities').createMalCoreEffectfulFunction;
+
+createMalCorePureFunction = _dereq_('./mal-type-utilities').createMalCorePureFunction;
 
 createMalIdentifier = _dereq_('./mal-type-utilities').createMalIdentifier;
 
@@ -156,7 +185,9 @@ last = _dereq_('./linked-list').last;
 
 malAtom_question_ = _dereq_('./mal-type-utilities').malAtom_question_;
 
-malCoreFunction_question_ = _dereq_('./mal-type-utilities').malCoreFunction_question_;
+malCoreEffectfulFunction_question_ = _dereq_('./mal-type-utilities').malCoreEffectfulFunction_question_;
+
+malCorePureFunction_question_ = _dereq_('./mal-type-utilities').malCorePureFunction_question_;
 
 malBoolean_question_ = _dereq_('./mal-type-utilities').malBoolean_question_;
 
@@ -186,7 +217,9 @@ malTrue = _dereq_('./mal-type-utilities').malTrue;
 
 malTrue_question_ = _dereq_('./mal-type-utilities').malTrue_question_;
 
-malUserFunction_question_ = _dereq_('./mal-type-utilities').malUserFunction_question_;
+malUserEffectfulFunction_question_ = _dereq_('./mal-type-utilities').malUserEffectfulFunction_question_;
+
+malUserPureFunction_question_ = _dereq_('./mal-type-utilities').malUserPureFunction_question_;
 
 next = _dereq_('./linked-list').next;
 
@@ -207,7 +240,7 @@ toArray = _dereq_('./linked-list').toArray;
 toPartialArray = _dereq_('./linked-list').toPartialArray;
 
 getEnvironment = function(display) {
-  var add, append, apply, areEqual, assoc, atom, atom_question_, boolean_question_, call, cons, contains_question_, coreFn_question_, count, createPredicate, deref, dissoc, divide, environment, evalWithBareEnv, evalWithEnv, exponentiate, false_question_, first, fix, function_question_, functionsOnJsValues, functionsOnMalValues, get, greaterThan, greaterThanOrEqual, ignoreIfTrue, ignoreUnlessTrue, ignore_bang_, keys, lessThan, lessThanOrEqual, lift, list, list_question_, load, loadWithBareEnv, loadWithEnv, macro_question_, malReduce, map, meta, mod, multiply, negate, nil_question_, nth, number_question_, parseNumber, prStr, prepend, println, prn, read, reset, rest, set, setCoreFnsOnJsValues_bang_, setCoreFnsOnMalValues_bang_, setMalValue, slurp, str, string_question_, stripQuotes, subtract, symbol, symbol_question_, time_hyphen_ms, true_question_, typeOf, userFn_question_, vals, withMeta, write, __evaluate__, __evaluate__2, _car, _cdr, _concat, _drop, _empty_question_, _environment_, _evaluate, _evaluateString, _evaluate_, _index, _interpret, _last, _length, _not, _prStr, _quit_, _read, _ref, _reverse, _take, _throw;
+  var add, append, apply, areEqual, assoc, atom, atom_question_, boolean_question_, call, cons, contains_question_, coreFn_question_, count, createPredicate, deref, displayEffectsOnMalValues, dissoc, divide, environment, evalWithBareEnv, evalWithEnv, exponentiate, false_question_, first, fix, function_question_, functionsOnJsValues, functionsOnMalValues, get, greaterThan, greaterThanOrEqual, ignoreIfTrue, ignoreUnlessTrue, ignore_bang_, keys, lessThan, lessThanOrEqual, lift, list, list_question_, load, loadWithBareEnv, loadWithEnv, macro_question_, malReduce, map, meta, mod, multiply, negate, nil_question_, nth, number_question_, parseNumber, prStr, prepend, read, reset, rest, set, setCoreEffectfulFnsOnMalValues_bang_, setCoreFnsOnJsValues_bang_, setCoreFnsOnMalValues_bang_, setMalValue, slurp, str, string_question_, stripQuotes, subtract, symbol, symbol_question_, time_hyphen_ms, true_question_, typeOf, userFn_question_, vals, withMeta, write, __evaluate__, __evaluate__2, _car, _cdr, _concat, _drop, _empty_question_, _environment_, _evaluate, _evaluateString, _evaluate_, _index, _interpret, _last, _length, _not, _prStr, _quit_, _read, _ref, _reverse, _take, _throw;
   lift = function(fnOnJsValues) {
     return function(malValueList) {
       return fnOnJsValues.apply(null, (toArray(malValueList)).map(extractJsValue));
@@ -219,7 +252,7 @@ getEnvironment = function(display) {
     for (fnName in fns) {
       if (!__hasProp.call(fns, fnName)) continue;
       fn = fns[fnName];
-      _results.push(env[fnName] = createMalCoreFunction(lift(fn)));
+      _results.push(env[fnName] = createMalCorePureFunction(lift(fn)));
     }
     return _results;
   };
@@ -430,18 +463,6 @@ getEnvironment = function(display) {
   str = function(malArgs) {
     return createMalString('"' + (_prStr(malArgs, false)).join('') + '"');
   };
-  prn = function(display) {
-    return function(malArgs) {
-      display(_prStr(malArgs, true).join(''));
-      return malNil;
-    };
-  };
-  println = function(display) {
-    return function(malArgs) {
-      display(_prStr(malArgs, false).join(''));
-      return malNil;
-    };
-  };
   _read = function(malArgs) {
     var jsFileName;
     jsFileName = stripQuotes(extractJsValue(car(malArgs)));
@@ -453,7 +474,7 @@ getEnvironment = function(display) {
     for (fnName in fns) {
       if (!__hasProp.call(fns, fnName)) continue;
       fn = fns[fnName];
-      _results.push(env[fnName] = createMalCoreFunction(fn));
+      _results.push(env[fnName] = createMalCorePureFunction(fn));
     }
     return _results;
   };
@@ -577,16 +598,16 @@ getEnvironment = function(display) {
         malValY = car(malArgs2);
         return __evaluate__2(createMalList(createMalList(malFnX, createMalList(malFnX)), createMalList(malValY)));
       };
-      malFnY = createMalCoreFunction(jsFnY);
+      malFnY = createMalCorePureFunction(jsFnY);
       return __evaluate__2(createMalList(malFnF, createMalList(malFnY)));
     };
-    malFnX = createMalCoreFunction(jsFnX);
+    malFnX = createMalCorePureFunction(jsFnX);
     return __evaluate__2(createMalList(malFnX, createMalList(malFnX)));
   };
   function_question_ = function(jsList) {
     var malValue;
     malValue = jsList.value;
-    return createMalBoolean(malCoreFunction_question_(malValue) || malUserFunction_question_(malValue));
+    return createMalBoolean(malCorePureFunction_question_(malValue) || malUserPureFunction_question_(malValue));
   };
   ignore_bang_ = function(malArgs) {
     return malIgnore;
@@ -784,7 +805,7 @@ getEnvironment = function(display) {
   write = function(malArgs) {
     return createMalString(serialize(car(malArgs)));
   };
-  _ref = [malAtom_question_, malBoolean_question_, malCoreFunction_question_, malFalse_question_, malList_question_, malMacro_question_, malNil_question_, malNumber_question_, malSymbol_question_, malString_question_, malUserFunction_question_, malTrue_question_].map(createPredicate), atom_question_ = _ref[0], boolean_question_ = _ref[1], coreFn_question_ = _ref[2], false_question_ = _ref[3], list_question_ = _ref[4], macro_question_ = _ref[5], nil_question_ = _ref[6], number_question_ = _ref[7], symbol_question_ = _ref[8], string_question_ = _ref[9], userFn_question_ = _ref[10], true_question_ = _ref[11];
+  _ref = [malAtom_question_, malBoolean_question_, malCorePureFunction_question_, malFalse_question_, malList_question_, malMacro_question_, malNil_question_, malNumber_question_, malSymbol_question_, malString_question_, malUserPureFunction_question_, malTrue_question_].map(createPredicate), atom_question_ = _ref[0], boolean_question_ = _ref[1], coreFn_question_ = _ref[2], false_question_ = _ref[3], list_question_ = _ref[4], macro_question_ = _ref[5], nil_question_ = _ref[6], number_question_ = _ref[7], symbol_question_ = _ref[8], string_question_ = _ref[9], userFn_question_ = _ref[10], true_question_ = _ref[11];
   functionsOnMalValues = {
     '=': areEqual,
     'append': append,
@@ -828,8 +849,6 @@ getEnvironment = function(display) {
     'number?': number_question_,
     'parse': _interpret,
     'prepend': prepend,
-    'println': println(display),
-    'prn': prn(display),
     'pr-str': prStr,
     '-quit-': _quit_,
     'read': read,
@@ -852,9 +871,32 @@ getEnvironment = function(display) {
     'with-meta': withMeta,
     'write': write
   };
+  setCoreEffectfulFnsOnMalValues_bang_ = function(represent) {
+    return function(env, fns) {
+      var fn, fnName, _results;
+      _results = [];
+      for (fnName in fns) {
+        if (!__hasProp.call(fns, fnName)) continue;
+        fn = fns[fnName];
+        _results.push(env[fnName] = createMalCoreEffectfulFunction(function(malArgs) {
+          return represent(fn(malArgs));
+        }));
+      }
+      return _results;
+    };
+  };
+  displayEffectsOnMalValues = {
+    prn: function(malArgs) {
+      return _prStr(malArgs, true).join('');
+    },
+    println: function(malArgs) {
+      return _prStr(malArgs, false).join('');
+    }
+  };
   environment = {};
   setCoreFnsOnJsValues_bang_(environment, functionsOnJsValues);
   setCoreFnsOnMalValues_bang_(environment, functionsOnMalValues);
+  setCoreEffectfulFnsOnMalValues_bang_(display)(environment, displayEffectsOnMalValues);
   environment['*ARGV*'] = createMalList();
   _environment_ = fromJsObject(environment);
   environment['*DEFAULT-ENV*'] = _environment_;
@@ -866,7 +908,7 @@ module.exports = getEnvironment;
 
 }).call(this,_dereq_('_process'))
 },{"./evaluate":5,"./index-utilities":6,"./interpret":7,"./js-utilities":8,"./linked-list":10,"./mal-type-utilities":11,"./process":16,"./serialize":17,"_process":14,"fs":13}],5:[function(_dereq_,module,exports){
-var addEnv, car, catch_asterisk_, cdr, circumpendQuotes, commentSignal, createFn, createLocalEnv, createMacro, createMalIndex, createMalKeyword, createMalList, createMalMacro, createMalNumber, createMalString, createMalSymbol, createMalUserFunction, def_bang_, defineNewValue, empty_question_, evalQuasiquotedExpr, evaluate, expandMacro, expand_hyphen_macro, extractJsValue, filter, fn_asterisk_, forEach, fromArray, ignorable_question_, jsString_question_, keyword_question_, let_asterisk_, letrec_asterisk_, lookup, macro_asterisk_, malCoreFunction_question_, malIgnore_question_, malIndex_question_, malList_question_, malMacro_question_, malNil, malSymbol_question_, malUserFunction_question_, map, next, quasiquote, quote, recurse, reduce, reduceBy2, reduceLet_asterisk_, reduceLetrec_asterisk_, reverse, serialize, setMainEnv, splat, spliceUnquote, spliceUnquote_question_, spliceUnquotedExpr_question_, toPartialArray, try_asterisk_, undef_bang_, undefineValue, unquote, unquote_question_, unquotedExpr_question_, unsetMainEnv, _do, _evaluate, _if,
+var addEnv, car, catch_asterisk_, cdr, circumpendQuotes, commentSignal, createFn, createLocalEnv, createMacro, createMalIndex, createMalKeyword, createMalList, createMalMacro, createMalNumber, createMalString, createMalSymbol, createMalUserPureFunction, def_bang_, defineNewValue, empty_question_, evalQuasiquotedExpr, evaluate, expandMacro, expand_hyphen_macro, extractJsValue, filter, fn_asterisk_, forEach, fromArray, ignorable_question_, jsString_question_, keyword_question_, let_asterisk_, letrec_asterisk_, lookup, macro_asterisk_, malCoreEffectfulFunction_question_, malCorePureFunction_question_, malIgnore_question_, malIndex_question_, malList_question_, malMacro_question_, malNil, malSymbol_question_, malUserPureFunction_question_, map, next, quasiquote, quote, recurse, reduce, reduceBy2, reduceLet_asterisk_, reduceLetrec_asterisk_, reverse, serialize, setMainEnv, splat, spliceUnquote, spliceUnquote_question_, spliceUnquotedExpr_question_, toPartialArray, try_asterisk_, undef_bang_, undefineValue, unquote, unquote_question_, unquotedExpr_question_, unsetMainEnv, _do, _evaluate, _if,
   __hasProp = {}.hasOwnProperty;
 
 addEnv = _dereq_('./env-utilities').addEnv;
@@ -895,7 +937,7 @@ createMalString = _dereq_('./mal-type-utilities').createMalString;
 
 createMalSymbol = _dereq_('./mal-type-utilities').createMalSymbol;
 
-createMalUserFunction = _dereq_('./mal-type-utilities').createMalUserFunction;
+createMalUserPureFunction = _dereq_('./mal-type-utilities').createMalUserPureFunction;
 
 def_bang_ = _dereq_('./keyTokens').def_bang_;
 
@@ -929,7 +971,9 @@ lookup = _dereq_('./env-utilities').lookup;
 
 macro_asterisk_ = _dereq_('./keyTokens').macro_asterisk_;
 
-malCoreFunction_question_ = _dereq_('./mal-type-utilities').malCoreFunction_question_;
+malCoreEffectfulFunction_question_ = _dereq_('./mal-type-utilities').malCoreEffectfulFunction_question_;
+
+malCorePureFunction_question_ = _dereq_('./mal-type-utilities').malCorePureFunction_question_;
 
 malIgnore_question_ = _dereq_('./mal-type-utilities').malIgnore_question_;
 
@@ -943,7 +987,7 @@ malNil = _dereq_('./mal-type-utilities').malNil;
 
 malSymbol_question_ = _dereq_('./mal-type-utilities').malSymbol_question_;
 
-malUserFunction_question_ = _dereq_('./mal-type-utilities').malUserFunction_question_;
+malUserPureFunction_question_ = _dereq_('./mal-type-utilities').malUserPureFunction_question_;
 
 map = _dereq_('./linked-list').map;
 
@@ -980,7 +1024,7 @@ unsetMainEnv = _dereq_('./env-utilities').unsetMainEnv;
 serialize = _dereq_('./serialize');
 
 createFn = function(malList, envs) {
-  return createMalUserFunction({
+  return createMalUserPureFunction({
     localEnvs: envs.slice(0),
     malExpression: next(malList),
     malParameters: car(malList)
@@ -1043,7 +1087,7 @@ evalQuasiquotedExpr = function(expr, envs) {
   return reverse(reduce(createMalList(), manageItem, expr));
 };
 
-_evaluate = function(malExpr, envs) {
+_evaluate = function(malExpr, envs, addResult) {
   var a1, catchExpr, ex, fn, head, index, jsString, key, localEnvs, malArgs, malExpression, malInvokable, malParameters, malSymbol, newEnv, newIndex, otherwise, remaining, t1, value, _catch, _ex, _ref, _ref1, _ref2;
   while (true) {
     switch (false) {
@@ -1129,11 +1173,16 @@ _evaluate = function(malExpr, envs) {
               case !malMacro_question_(malInvokable):
                 malExpr = expandMacro(head, t1, envs);
                 break;
-              case !malCoreFunction_question_(malInvokable):
+              case !malCorePureFunction_question_(malInvokable):
                 fn = extractJsValue(malInvokable);
                 malArgs = map(evaluate(envs), malExpr);
                 return fn(malArgs);
-              case !malUserFunction_question_(malInvokable):
+              case !malCoreEffectfulFunction_question_(malInvokable):
+                fn = extractJsValue(malInvokable);
+                malArgs = map(evaluate(envs), malExpr);
+                addResult(fn(malArgs));
+                return malNil;
+              case !malUserPureFunction_question_(malInvokable):
                 _ref2 = extractJsValue(malInvokable), localEnvs = _ref2.localEnvs, malExpression = _ref2.malExpression, malParameters = _ref2.malParameters;
                 malArgs = map(evaluate(envs), malExpr);
                 malExpr = malExpression;
@@ -1148,12 +1197,12 @@ _evaluate = function(malExpr, envs) {
   }
 };
 
-evaluate = function(envs) {
+evaluate = function(envs, addResult) {
   return function(malExpr) {
     if (malExpr === commentSignal) {
       return commentSignal;
     }
-    return _evaluate(malExpr, envs);
+    return _evaluate(malExpr, envs, addResult);
   };
 };
 
@@ -1384,7 +1433,7 @@ var EOL, car, cdr, concat, cons, copy, createMalList, createNode, drop, empty_qu
 
 malTypes = _dereq_('./mal-types').malTypes;
 
-malListType = malTypes[5];
+malListType = malTypes[6];
 
 car = function(malList) {
   if (empty_question_(malList)) {
@@ -1650,7 +1699,7 @@ module.exports = {
 
 
 },{"./mal-types":12}],11:[function(_dereq_,module,exports){
-var createMalAtom, createMalBoolean, createMalCoreFunction, createMalIdentifier, createMalIgnore, createMalIndex, createMalKeyword, createMalList, createMalMacro, createMalNil, createMalNumber, createMalSpecialForm, createMalString, createMalSymbol, createMalUserFunction, createMalValue, createPredicate, create_hyphen_factory_hyphen__ampersand__hyphen_predicate, extractJsValue, malAtomType, malAtom_question_, malBoolean_question_, malCoreFunction_question_, malFalse, malFalse_question_, malIdentifier_question_, malIgnore, malIgnore_question_, malIndex_question_, malKeyword_question_, malList_question_, malMacro_question_, malNil, malNil_question_, malNumber_question_, malSpecialForm_question_, malString_question_, malSymbol_question_, malTrue, malTrue_question_, malTypes, malUserFunction_question_, _createMalAtom, _createMalBoolean, _createMalList, _createMalUnit, _malUnit_question_, _ref, _ref1, _ref10, _ref11, _ref12, _ref13, _ref14, _ref15, _ref16, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9;
+var createMalAtom, createMalBoolean, createMalCoreEffectfulFunction, createMalCorePureFunction, createMalIdentifier, createMalIgnore, createMalIndex, createMalKeyword, createMalList, createMalMacro, createMalNil, createMalNumber, createMalSpecialForm, createMalString, createMalSymbol, createMalUserPureFunction, createMalValue, createPredicate, create_hyphen_factory_hyphen__ampersand__hyphen_predicate, extractJsValue, malAtomType, malAtom_question_, malBoolean_question_, malCoreEffectfulFunction_question_, malCorePureFunction_question_, malFalse, malFalse_question_, malIdentifier_question_, malIgnore, malIgnore_question_, malIndex_question_, malKeyword_question_, malList_question_, malMacro_question_, malNil, malNil_question_, malNumber_question_, malSpecialForm_question_, malString_question_, malSymbol_question_, malTrue, malTrue_question_, malTypes, malUserPureFunction_question_, _createMalAtom, _createMalBoolean, _createMalList, _createMalUnit, _malUnit_question_, _ref, _ref1, _ref10, _ref11, _ref12, _ref13, _ref14, _ref15, _ref16, _ref17, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9;
 
 createMalList = _dereq_('./linked-list').createMalList;
 
@@ -1709,20 +1758,21 @@ extractJsValue = function(malValue) {
   return malValue.jsValue;
 };
 
-_ref = malTypes.map(create_hyphen_factory_hyphen__ampersand__hyphen_predicate), (_ref1 = _ref[0], _createMalBoolean = _ref1[0], malBoolean_question_ = _ref1[1]), (_ref2 = _ref[1], createMalCoreFunction = _ref2[0], malCoreFunction_question_ = _ref2[1]), (_ref3 = _ref[2], createMalIdentifier = _ref3[0], malIdentifier_question_ = _ref3[1]), (_ref4 = _ref[3], createMalIndex = _ref4[0], malIndex_question_ = _ref4[1]), (_ref5 = _ref[4], createMalKeyword = _ref5[0], malKeyword_question_ = _ref5[1]), (_ref6 = _ref[5], _createMalList = _ref6[0], malList_question_ = _ref6[1]), (_ref7 = _ref[6], createMalMacro = _ref7[0], malMacro_question_ = _ref7[1]), (_ref8 = _ref[7], createMalNumber = _ref8[0], malNumber_question_ = _ref8[1]), (_ref9 = _ref[8], createMalSpecialForm = _ref9[0], malSpecialForm_question_ = _ref9[1]), (_ref10 = _ref[9], createMalString = _ref10[0], malString_question_ = _ref10[1]), (_ref11 = _ref[10], createMalSymbol = _ref11[0], malSymbol_question_ = _ref11[1]), (_ref12 = _ref[11], _createMalUnit = _ref12[0], _malUnit_question_ = _ref12[1]), (_ref13 = _ref[12], createMalUserFunction = _ref13[0], malUserFunction_question_ = _ref13[1]), (_ref14 = _ref[13], _createMalAtom = _ref14[0], malAtom_question_ = _ref14[1]);
+_ref = malTypes.map(create_hyphen_factory_hyphen__ampersand__hyphen_predicate), (_ref1 = _ref[0], _createMalBoolean = _ref1[0], malBoolean_question_ = _ref1[1]), (_ref2 = _ref[1], createMalCoreEffectfulFunction = _ref2[0], malCoreEffectfulFunction_question_ = _ref2[1]), (_ref3 = _ref[2], createMalCorePureFunction = _ref3[0], malCorePureFunction_question_ = _ref3[1]), (_ref4 = _ref[3], createMalIdentifier = _ref4[0], malIdentifier_question_ = _ref4[1]), (_ref5 = _ref[4], createMalIndex = _ref5[0], malIndex_question_ = _ref5[1]), (_ref6 = _ref[5], createMalKeyword = _ref6[0], malKeyword_question_ = _ref6[1]), (_ref7 = _ref[6], _createMalList = _ref7[0], malList_question_ = _ref7[1]), (_ref8 = _ref[7], createMalMacro = _ref8[0], malMacro_question_ = _ref8[1]), (_ref9 = _ref[8], createMalNumber = _ref9[0], malNumber_question_ = _ref9[1]), (_ref10 = _ref[9], createMalSpecialForm = _ref10[0], malSpecialForm_question_ = _ref10[1]), (_ref11 = _ref[10], createMalString = _ref11[0], malString_question_ = _ref11[1]), (_ref12 = _ref[11], createMalSymbol = _ref12[0], malSymbol_question_ = _ref12[1]), (_ref13 = _ref[12], _createMalUnit = _ref13[0], _malUnit_question_ = _ref13[1]), (_ref14 = _ref[13], createMalUserPureFunction = _ref14[0], malUserPureFunction_question_ = _ref14[1]), (_ref15 = _ref[14], _createMalAtom = _ref15[0], malAtom_question_ = _ref15[1]);
 
 malIgnore = _createMalUnit(null);
 
 malNil = _createMalUnit(null);
 
-_ref15 = [false, true].map(_createMalBoolean), malFalse = _ref15[0], malTrue = _ref15[1];
+_ref16 = [false, true].map(_createMalBoolean), malFalse = _ref16[0], malTrue = _ref16[1];
 
-_ref16 = [malFalse, malIgnore, malNil, malTrue].map(createPredicate), malFalse_question_ = _ref16[0], malIgnore_question_ = _ref16[1], malNil_question_ = _ref16[2], malTrue_question_ = _ref16[3];
+_ref17 = [malFalse, malIgnore, malNil, malTrue].map(createPredicate), malFalse_question_ = _ref17[0], malIgnore_question_ = _ref17[1], malNil_question_ = _ref17[2], malTrue_question_ = _ref17[3];
 
 module.exports = {
   createMalAtom: createMalAtom,
   createMalBoolean: createMalBoolean,
-  createMalCoreFunction: createMalCoreFunction,
+  createMalCoreEffectfulFunction: createMalCoreEffectfulFunction,
+  createMalCorePureFunction: createMalCorePureFunction,
   createMalIdentifier: createMalIdentifier,
   createMalIgnore: createMalIgnore,
   createMalIndex: createMalIndex,
@@ -1734,11 +1784,12 @@ module.exports = {
   createMalSpecialForm: createMalSpecialForm,
   createMalString: createMalString,
   createMalSymbol: createMalSymbol,
-  createMalUserFunction: createMalUserFunction,
+  createMalUserPureFunction: createMalUserPureFunction,
   extractJsValue: extractJsValue,
   malAtom_question_: malAtom_question_,
   malBoolean_question_: malBoolean_question_,
-  malCoreFunction_question_: malCoreFunction_question_,
+  malCoreEffectfulFunction_question_: malCoreEffectfulFunction_question_,
+  malCorePureFunction_question_: malCorePureFunction_question_,
   malFalse: malFalse,
   malFalse_question_: malFalse_question_,
   malIdentifier_question_: malIdentifier_question_,
@@ -1756,19 +1807,20 @@ module.exports = {
   malSymbol_question_: malSymbol_question_,
   malTrue: malTrue,
   malTrue_question_: malTrue_question_,
-  malUserFunction_question_: malUserFunction_question_
+  malUserPureFunction_question_: malUserPureFunction_question_
 };
 
 
 },{"./linked-list":10,"./mal-types":12}],12:[function(_dereq_,module,exports){
-var malAtomType, malBooleanType, malCoreFunctionType, malIdentifierType, malIndexType, malKeywordType, malListType, malMacroType, malNumberType, malSpecialFormType, malStringType, malSymbolType, malTypes, malUnitType, malUserFunctionType;
+var malAtomType, malBooleanType, malCoreEffectfulFunctionType, malCorePureFunctionType, malIdentifierType, malIndexType, malKeywordType, malListType, malMacroType, malNumberType, malSpecialFormType, malStringType, malSymbolType, malTypes, malUnitType, malUserPureFunctionType;
 
-malTypes = [malBooleanType = 'malBooleanType', malCoreFunctionType = 'malCoreFunctionType', malIdentifierType = 'malIdentifierType', malIndexType = 'malIndexType', malKeywordType = 'malKeywordType', malListType = 'malListType', malMacroType = 'malMacroType', malNumberType = 'malNumberType', malSpecialFormType = 'malSpecialFormType', malStringType = 'malStringType', malSymbolType = 'malSymbolType', malUnitType = 'malUnitType', malUserFunctionType = 'malUserFunctionType', malAtomType = 'malAtomType'];
+malTypes = [malBooleanType = 'malBooleanType', malCoreEffectfulFunctionType = 'malCoreEffectfulFunctionType', malCorePureFunctionType = 'malCorePureFunctionType', malIdentifierType = 'malIdentifierType', malIndexType = 'malIndexType', malKeywordType = 'malKeywordType', malListType = 'malListType', malMacroType = 'malMacroType', malNumberType = 'malNumberType', malSpecialFormType = 'malSpecialFormType', malStringType = 'malStringType', malSymbolType = 'malSymbolType', malUnitType = 'malUnitType', malUserPureFunctionType = 'malUserPureFunctionType', malAtomType = 'malAtomType'];
 
 module.exports = {
   malAtomType: malAtomType,
   malBooleanType: malBooleanType,
-  malCoreFunctionType: malCoreFunctionType,
+  malCoreEffectfulFunctionType: malCoreEffectfulFunctionType,
+  malCorePureFunctionType: malCorePureFunctionType,
   malIdentifierType: malIdentifierType,
   malIndexType: malIndexType,
   malKeywordType: malKeywordType,
@@ -1780,7 +1832,7 @@ module.exports = {
   malSymbolType: malSymbolType,
   malTypes: malTypes,
   malUnitType: malUnitType,
-  malUserFunctionType: malUserFunctionType
+  malUserPureFunctionType: malUserPureFunctionType
 };
 
 
@@ -2141,7 +2193,17 @@ interpret = _dereq_('./interpret');
 
 process = function(envs) {
   return function(sourceCode) {
-    return evaluate(envs)(interpret(sourceCode));
+    var addResult, pureResult, results;
+    results = [];
+    addResult = function(result) {
+      return results.push(result);
+    };
+    pureResult = evaluate(envs, addResult)(interpret(sourceCode));
+    addResult({
+      effect: false,
+      value: pureResult
+    });
+    return results;
   };
 };
 
@@ -2149,7 +2211,7 @@ module.exports = process;
 
 
 },{"./evaluate":5,"./interpret":7}],17:[function(_dereq_,module,exports){
-var adjoinMalValue, commentSignal, coreFunctionLabel, extractJsValue, ignoreLabel, indexEnd, indexStart, keywordLabel, listEnd, listStart, macroLabel, malAtom_question_, malCoreFunction_question_, malIdentifier_question_, malIgnore_question_, malIndex_question_, malKeyword_question_, malList_question_, malMacro_question_, malNil_question_, malString_question_, malUserFunction_question_, nilLabel, reduce, serialize, serializeAtom, serializeIdentifier, serializeIndex, serializeList, serializeString, stripQuotes, userFunctionLabel,
+var adjoinMalValue, commentSignal, coreEffectfulFunctionLabel, corePureFunctionLabel, extractJsValue, ignoreLabel, indexEnd, indexStart, keywordLabel, listEnd, listStart, macroLabel, malAtom_question_, malCoreEffectfulFunction_question_, malCorePureFunction_question_, malIdentifier_question_, malIgnore_question_, malIndex_question_, malKeyword_question_, malList_question_, malMacro_question_, malNil_question_, malString_question_, malUserPureFunction_question_, nilLabel, reduce, serialize, serializeAtom, serializeIdentifier, serializeIndex, serializeList, serializeString, stripQuotes, userPureFunctionLabel,
   __hasProp = {}.hasOwnProperty;
 
 commentSignal = _dereq_('./commentSignal');
@@ -2166,7 +2228,9 @@ listStart = _dereq_('./keyTokens').listStart;
 
 malAtom_question_ = _dereq_('./mal-type-utilities').malAtom_question_;
 
-malCoreFunction_question_ = _dereq_('./mal-type-utilities').malCoreFunction_question_;
+malCoreEffectfulFunction_question_ = _dereq_('./mal-type-utilities').malCoreEffectfulFunction_question_;
+
+malCorePureFunction_question_ = _dereq_('./mal-type-utilities').malCorePureFunction_question_;
 
 malIdentifier_question_ = _dereq_('./mal-type-utilities').malIdentifier_question_;
 
@@ -2184,7 +2248,7 @@ malNil_question_ = _dereq_('./mal-type-utilities').malNil_question_;
 
 malString_question_ = _dereq_('./mal-type-utilities').malString_question_;
 
-malUserFunction_question_ = _dereq_('./mal-type-utilities').malUserFunction_question_;
+malUserPureFunction_question_ = _dereq_('./mal-type-utilities').malUserPureFunction_question_;
 
 reduce = _dereq_('./linked-list').reduce;
 
@@ -2219,13 +2283,17 @@ serialize = function(malExpr, printReadably_question_) {
         return function(x) {
           return keywordLabel;
         };
-      case !malCoreFunction_question_(malExpr):
+      case !malCoreEffectfulFunction_question_(malExpr):
         return function(x) {
-          return coreFunctionLabel;
+          return coreEffectfulFunctionLabel;
         };
-      case !malUserFunction_question_(malExpr):
+      case !malCorePureFunction_question_(malExpr):
         return function(x) {
-          return userFunctionLabel;
+          return corePureFunctionLabel;
+        };
+      case !malUserPureFunction_question_(malExpr):
+        return function(x) {
+          return userPureFunctionLabel;
         };
       case !malMacro_question_(malExpr):
         return function(x) {
@@ -2291,7 +2359,9 @@ stripQuotes = function(jsString) {
   return jsString.slice(1, -1);
 };
 
-coreFunctionLabel = '<core function>';
+coreEffectfulFunctionLabel = '<effectful core function>';
+
+corePureFunctionLabel = '<pure core function>';
 
 ignoreLabel = '<ignore>';
 
@@ -2301,7 +2371,7 @@ macroLabel = '<macro>';
 
 nilLabel = 'nil';
 
-userFunctionLabel = '<user function>';
+userPureFunctionLabel = '<pure user function>';
 
 module.exports = serialize;
 

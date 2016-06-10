@@ -10,5 +10,5 @@ var display = function (value) {
 
 initialize({
   promptLabel: promptLabel,
-  transform: interpretLisp(display)
+  transform: interpretLisp
 });

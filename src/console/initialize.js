@@ -38,13 +38,12 @@ function convertEventToCommand(event, transform) {
       event.preventDefault();
       return interpreter.deleteRightChar(appState);
     default:
-      console.log(event.charCode);
-      if (event.charCode === 97)
-      {
-        display('Lisp>', 'HELLO, WORLD');
-        return;
-      }
-
+      //console.log(event.charCode);
+      //if (event.charCode === 97)
+      //{
+      //  display('Lisp>', 'HELLO, WORLD');
+      //  return;
+      //}
       return interpreter.addChar(appState, String.fromCharCode(event.charCode));
   }
 }
