@@ -900,11 +900,19 @@ function submit(appState, transform) {
   var __promptTextPost = appState.cursor.post;
   var __text = __promptText + __promptTextPost;
   var text = __text.trim();
+
+  var results = transform(text);
+  var length = results.length;
+  var pureResult = results[length - 1].value;
+  var displayEffects = results
+    .slice(0, length - 1)
+    .filter(function (value) { return value.effect.type === 'display'; });
+
   return {
     commandType: 'submit',
     oldPrompt: text,
-    response: getLast(transform(text)).value,
-    display: appState.history.display
+    response: pureResult,
+    display: displayEffects
   };
 }
 
