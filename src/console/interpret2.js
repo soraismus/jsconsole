@@ -11,6 +11,7 @@ var childByTag           = childrenUtility.childByTag;
 
 var magicNumber = 11;
 
+var consoleClass              = 'jsconsole';
 var lineItemClass             = 'jsconsole-line-item';
 var oldPromptClass            = 'jsconsole-old-prompt';
 var oldPromptResponseClass    = 'jsconsole-old-prompt-response';
@@ -145,36 +146,17 @@ function translateHistory(promptLabel, command) {
 }
 
 function translateDisplay(promptLabel, displayEffects) {
-  //var removals = [
-  //  childByClass(promptClass, 0)
-  //];
-  var additions = displayEffects.map(function (displayEffect) {
-    return createDisplay(displayEffect.value);
-  });
-      //.concat([createPrompt(promptLabel)]);
-  //var additions = [
-  //  createDisplay(firstMessage),
-  //  createPrompt(promptLabel)
-  //];
-  //if (command[outerKey][innerKey].display.length >= magicNumber) {
-  //  removals.push(childByClass(lineItemClass, 0));
-  //}
   return [{
     children: {
-      //remove: removals,
       modify: [
         {
-          child: childByQuery('div pre', 0),
-          changes: { children: { add: additions }}
+          child: childByClass(consoleClass, 0),
+          changes: { children: { add:
+            displayEffects.map(function (displayEffect) {
+              return createDisplay(displayEffect.value);
+            })
+          }}
         }
-        //,{
-        //  child: childByClass(promptTextClass, 0),
-        //  changes: { text: { erase: true }},
-        //}
-        //,{
-        //  child: childByClass(promptTextPostCursorClass, 0),
-        //  changes: { text: { erase: true }},
-        //}
       ]
     }
   }];
@@ -182,38 +164,18 @@ function translateDisplay(promptLabel, displayEffects) {
 
 function translateSubmittal(promptLabel, command) {
   var removals = [childByClass(promptClass, 0)];
-  //var additions = [
-  //  createOldPrompt(promptLabel + command.oldPrompt),
-  //  createOldPromptReply(command.response),
-  //  createPrompt(promptLabel)
-  //];
   if (command.display.length >= magicNumber) {
     removals.push(
       childByClass(lineItemClass, 0),
       childByClass(lineItemClass, 0));
   }
-
-  /*
-  return [{
-    children: {
-      remove: removals,
-      modify: [
-        {
-          child: childByQuery('div pre', 0),
-          changes: { children: { add: additions }}
-        }
-      ]
-    }
-  }];
-  */
-
   return [
     {
       children: {
         remove: removals,
         modify: [
           {
-            child: childByQuery('div pre', 0),
+            child: childByClass(consoleClass, 0),
             changes: { children: { add: [
                 createOldPrompt(promptLabel + command.oldPrompt)
               ]
@@ -222,12 +184,11 @@ function translateSubmittal(promptLabel, command) {
         ]
       }
     },
-
     {
       children: {
         modify: [
           {
-            child: childByQuery('div pre', 0),
+            child: childByClass(consoleClass, 0),
             changes: { children: { add: [
                 createOldPromptReply(command.response),
                 createPrompt(promptLabel)
@@ -237,9 +198,7 @@ function translateSubmittal(promptLabel, command) {
         ]
       }
     }
-
   ];
-
 }
 
 module.exports = {
