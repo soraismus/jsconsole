@@ -305,7 +305,7 @@ function interpret(appState, command) {
 function translate(promptLabel, command) {
   var cursorChanges = [];
   var displayChanges = [];
-  var historyChanges = [];
+  var historyChanges = [[], []];
   for (var outerKey in command) {
     switch (outerKey) {
       case 'cursor':
@@ -324,7 +324,12 @@ function translate(promptLabel, command) {
         break;
     }
   }
-  return cursorChanges.concat(historyChanges, displayChanges);
+  //return cursorChanges.concat(historyChanges, displayChanges);
+  return cursorChanges
+    .concat(
+      [historyChanges[0]],
+      displayChanges,
+      [historyChanges[1]]);
 };
 
 function translateCursor(promptLabel, command) {
@@ -361,14 +366,14 @@ function translateCursor(promptLabel, command) {
 function translateHistory(promptLabel, command) {
   for (var innerKey in command) {
     switch (innerKey) {
-      case 'fastForward':
-        break;
-      case 'display':
-        console.log('TRANSLATE-HISTORY DISPLAY');
-        return translateDisplay(promptLabel, command.display.text);
-        break;
-      case 'rewind':
-        break;
+      //case 'fastForward':
+      //  break;
+      //case 'display':
+      //  console.log('TRANSLATE-HISTORY DISPLAY');
+      //  return translateDisplay(promptLabel, command.display.text);
+      //  break;
+      //case 'rewind':
+      //  break;
       case 'submit':
         return translateSubmittal(promptLabel, command.submit);
     }
@@ -377,16 +382,13 @@ function translateHistory(promptLabel, command) {
 }
 
 function translateDisplay(promptLabel, displayEffects) {
-  console.log('CALL TRANSLATE-DISPLAY');
-  var firstMessage = displayEffects[0].value;
-  var removals = [
-    childByClass(promptClass, 0)
-  ];
-  var additions =
-    displayEffects
-      .map(function (displayEffect) {
-        return createDisplay(displayEffect.value);
-      }).concat([createPrompt(promptLabel)]);
+  //var removals = [
+  //  childByClass(promptClass, 0)
+  //];
+  var additions = displayEffects.map(function (displayEffect) {
+    return createDisplay(displayEffect.value);
+  });
+      //.concat([createPrompt(promptLabel)]);
   //var additions = [
   //  createDisplay(firstMessage),
   //  createPrompt(promptLabel)
@@ -396,20 +398,20 @@ function translateDisplay(promptLabel, displayEffects) {
   //}
   return [{
     children: {
-      remove: removals,
+      //remove: removals,
       modify: [
         {
           child: childByQuery('div pre', 0),
           changes: { children: { add: additions }}
-        },
-        {
-          child: childByClass(promptTextClass, 0),
-          changes: { text: { erase: true }},
-        },
-        {
-          child: childByClass(promptTextPostCursorClass, 0),
-          changes: { text: { erase: true }},
         }
+        //,{
+        //  child: childByClass(promptTextClass, 0),
+        //  changes: { text: { erase: true }},
+        //}
+        //,{
+        //  child: childByClass(promptTextPostCursorClass, 0),
+        //  changes: { text: { erase: true }},
+        //}
       ]
     }
   }];
@@ -417,16 +419,18 @@ function translateDisplay(promptLabel, displayEffects) {
 
 function translateSubmittal(promptLabel, command) {
   var removals = [childByClass(promptClass, 0)];
-  var additions = [
-    createOldPrompt(promptLabel + command.oldPrompt),
-    createOldPromptReply(command.response),
-    createPrompt(promptLabel)
-  ];
+  //var additions = [
+  //  createOldPrompt(promptLabel + command.oldPrompt),
+  //  createOldPromptReply(command.response),
+  //  createPrompt(promptLabel)
+  //];
   if (command.display.length >= magicNumber) {
     removals.push(
       childByClass(lineItemClass, 0),
       childByClass(lineItemClass, 0));
   }
+
+  /*
   return [{
     children: {
       remove: removals,
@@ -438,6 +442,41 @@ function translateSubmittal(promptLabel, command) {
       ]
     }
   }];
+  */
+
+  return [
+    {
+      children: {
+        remove: removals,
+        modify: [
+          {
+            child: childByQuery('div pre', 0),
+            changes: { children: { add: [
+                createOldPrompt(promptLabel + command.oldPrompt)
+              ]
+            }}
+          }
+        ]
+      }
+    },
+
+    {
+      children: {
+        modify: [
+          {
+            child: childByQuery('div pre', 0),
+            changes: { children: { add: [
+                createOldPromptReply(command.response),
+                createPrompt(promptLabel)
+              ]
+            }}
+          }
+        ]
+      }
+    }
+
+  ];
+
 }
 
 module.exports = {
@@ -2092,10 +2131,10 @@ getEnvironment = function(display) {
     };
   };
   displayEffectsOnMalValues = {
-    prn: function(malArgs) {
+    'prn': function(malArgs) {
       return _prStr(malArgs, true).join('');
     },
-    println: function(malArgs) {
+    'println': function(malArgs) {
       return _prStr(malArgs, false).join('');
     }
   };
@@ -3577,7 +3616,7 @@ macroLabel = '<macro>';
 
 nilLabel = 'nil';
 
-userPureFunctionLabel = '<pure user function>';
+userPureFunctionLabel = '<user function>';
 
 module.exports = serialize;
 

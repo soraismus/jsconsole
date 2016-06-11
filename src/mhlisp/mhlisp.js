@@ -886,10 +886,10 @@ getEnvironment = function(display) {
     };
   };
   displayEffectsOnMalValues = {
-    prn: function(malArgs) {
+    'prn': function(malArgs) {
       return _prStr(malArgs, true).join('');
     },
-    println: function(malArgs) {
+    'println': function(malArgs) {
       return _prStr(malArgs, false).join('');
     }
   };
@@ -2371,7 +2371,7 @@ macroLabel = '<macro>';
 
 nilLabel = 'nil';
 
-userPureFunctionLabel = '<pure user function>';
+userPureFunctionLabel = '<user function>';
 
 module.exports = serialize;
 
