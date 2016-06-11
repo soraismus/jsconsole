@@ -65,32 +65,41 @@ function interpret(appState, command) {
   }
 };
 
-function translate (promptLabel, command) {
+function translate(promptLabel, command) {
   var cursorChanges = [];
+  var displayChanges = [];
   var historyChanges = [];
   for (var outerKey in command) {
     switch (outerKey) {
       case 'cursor':
         cursorChanges =
-          translateCursor(promptLabel, command, outerKey);
+          translateCursor(promptLabel, command.cursor);
+        break;
+      case 'display':
+        displayChanges =
+          command.display.length > 0
+            ? translateDisplay(promptLabel, command.display)
+            : [];
+        break;
       case 'history':
         historyChanges =
-          translateHistory(promptLabel, command, outerKey);
+          translateHistory(promptLabel, command.history);
+        break;
     }
   }
-  return cursorChanges.concat(historyChanges);
+  return cursorChanges.concat(historyChanges, displayChanges);
 };
 
-function translateCursor(promptLabel, command, outerKey) {
+function translateCursor(promptLabel, command) {
   var changes = [];
-  for (var innerKey in command[outerKey]) {
+  for (var innerKey in command) {
     switch (innerKey) {
       case 'pre':
         changes.push({
           children: {
             modify: [{
               child: childByClass(promptTextClass, 0),
-              changes: { text: command[outerKey][innerKey] }
+              changes: { text: command[innerKey] }
             }]
           }
         });
@@ -100,7 +109,7 @@ function translateCursor(promptLabel, command, outerKey) {
           children: {
             modify: [{
               child: childByClass(promptTextPostCursorClass, 0),
-              changes: { text: command[outerKey][innerKey] }
+              changes: { text: command[innerKey] }
             }]
           }
         });
@@ -112,32 +121,39 @@ function translateCursor(promptLabel, command, outerKey) {
   return changes;
 }
 
-function translateHistory(promptLabel, command, outerKey) {
-  for (var innerKey in command[outerKey]) {
+function translateHistory(promptLabel, command) {
+  for (var innerKey in command) {
     switch (innerKey) {
       case 'fastForward':
         break;
       case 'display':
         console.log('TRANSLATE-HISTORY DISPLAY');
-        return translateDisplay(promptLabel, command[outerKey][innerKey].text);
+        return translateDisplay(promptLabel, command.display.text);
         break;
       case 'rewind':
         break;
       case 'submit':
-        return translateSubmittal(promptLabel, command, outerKey, innerKey);
+        return translateSubmittal(promptLabel, command.submit);
     }
   }
   return [];
 }
 
-function translateDisplay(promptLabel, text) {
+function translateDisplay(promptLabel, displayEffects) {
+  console.log('CALL TRANSLATE-DISPLAY');
+  var firstMessage = displayEffects[0].value;
   var removals = [
     childByClass(promptClass, 0)
   ];
-  var additions = [
-    createDisplay(text),
-    createPrompt(promptLabel)
-  ];
+  var additions =
+    displayEffects
+      .map(function (displayEffect) {
+        return createDisplay(displayEffect.value);
+      }).concat([createPrompt(promptLabel)]);
+  //var additions = [
+  //  createDisplay(firstMessage),
+  //  createPrompt(promptLabel)
+  //];
   //if (command[outerKey][innerKey].display.length >= magicNumber) {
   //  removals.push(childByClass(lineItemClass, 0));
   //}
@@ -162,14 +178,14 @@ function translateDisplay(promptLabel, text) {
   }];
 }
 
-function translateSubmittal(promptLabel, command, outerKey, innerKey) {
+function translateSubmittal(promptLabel, command) {
   var removals = [childByClass(promptClass, 0)];
   var additions = [
-    createOldPrompt(promptLabel + command[outerKey][innerKey].oldPrompt),
-    createOldPromptReply(command[outerKey][innerKey].response),
+    createOldPrompt(promptLabel + command.oldPrompt),
+    createOldPromptReply(command.response),
     createPrompt(promptLabel)
   ];
-  if (command[outerKey][innerKey].display.length >= magicNumber) {
+  if (command.display.length >= magicNumber) {
     removals.push(
       childByClass(lineItemClass, 0),
       childByClass(lineItemClass, 0));

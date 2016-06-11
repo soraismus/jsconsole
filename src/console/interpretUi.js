@@ -85,7 +85,8 @@ function interpretUi(command) {
             oldPrompt: command.oldPrompt,
             response: command.response
           }
-        }
+        },
+        display: command.display,
       };
 
     case 'noOp':

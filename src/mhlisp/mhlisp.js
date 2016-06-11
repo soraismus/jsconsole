@@ -1056,14 +1056,14 @@ createMacro = function(malList, envs) {
   });
 };
 
-defineNewValue = function(malList, envs) {
+defineNewValue = function(malList, envs, addResult) {
   var jsKey, malValue;
   jsKey = extractJsValue(car(malList));
-  malValue = _evaluate(next(malList), envs);
+  malValue = _evaluate(next(malList), envs, addResult);
   return setMainEnv(envs, jsKey, malValue);
 };
 
-evalQuasiquotedExpr = function(expr, envs) {
+evalQuasiquotedExpr = function(expr, envs, addResult) {
   var manageItem;
   if (!malList_question_(expr)) {
     return expr;
@@ -1072,14 +1072,14 @@ evalQuasiquotedExpr = function(expr, envs) {
     var _manageItem;
     switch (false) {
       case !unquotedExpr_question_(item):
-        return createMalList(_evaluate(next(item), envs), memo);
+        return createMalList(_evaluate(next(item), envs, addResult), memo);
       case !spliceUnquotedExpr_question_(item):
         _manageItem = function(_memo, _item) {
           return createMalList(_item, _memo);
         };
-        return reduce(memo, _manageItem, _evaluate(next(item), envs));
+        return reduce(memo, _manageItem, _evaluate(next(item), envs, addResult));
       case !malList_question_(item):
-        return createMalList(evalQuasiquotedExpr(item, envs), memo);
+        return createMalList(evalQuasiquotedExpr(item, envs, addResult), memo);
       default:
         return createMalList(item, memo);
     }
@@ -1105,34 +1105,34 @@ _evaluate = function(malExpr, envs, addResult) {
         for (key in index) {
           if (!__hasProp.call(index, key)) continue;
           value = index[key];
-          newIndex[key] = _evaluate(index[key], envs);
+          newIndex[key] = _evaluate(index[key], envs, addResult);
         }
         return createMalIndex(newIndex);
       case !!(malList_question_(malExpr)):
         return malExpr;
       default:
         malExpr = filter((function(x) {
-          return !(ignorable_question_(x, envs));
+          return !(ignorable_question_(x, envs, addResult));
         }), malExpr);
         _ref = toPartialArray(2, malExpr), head = _ref[0], a1 = _ref[1], remaining = _ref[2];
         t1 = cdr(malExpr);
         switch (extractJsValue(head)) {
           case def_bang_:
-            return defineNewValue(t1, envs);
+            return defineNewValue(t1, envs, addResult);
           case undef_bang_:
             return undefineValue(t1, envs);
           case let_asterisk_:
             malExpr = car(remaining);
-            envs = addEnv(envs, reduceLet_asterisk_(envs, a1));
+            envs = addEnv(envs, reduceLet_asterisk_(envs, a1, addResult));
             break;
           case letrec_asterisk_:
             malExpr = car(remaining);
-            envs = addEnv(envs, reduceLetrec_asterisk_(envs, a1));
+            envs = addEnv(envs, reduceLetrec_asterisk_(envs, a1, addResult));
             break;
           case _do:
-            return forEach(evaluate(envs), t1);
+            return forEach(evaluate(envs, addResult), t1);
           case _if:
-            malExpr = extractJsValue(_evaluate(a1, envs)) ? car(remaining) : empty_question_(otherwise = next(remaining)) ? malNil : otherwise;
+            malExpr = extractJsValue(_evaluate(a1, envs, addResult)) ? car(remaining) : empty_question_(otherwise = next(remaining)) ? malNil : otherwise;
             break;
           case fn_asterisk_:
             return createFn(t1, envs);
@@ -1141,12 +1141,12 @@ _evaluate = function(malExpr, envs, addResult) {
           case quote:
             return car(t1);
           case quasiquote:
-            return evalQuasiquotedExpr(car(t1), envs);
+            return evalQuasiquotedExpr(car(t1), envs, addResult);
           case expand_hyphen_macro:
-            return expandMacro(car(a1), cdr(a1), envs);
+            return expandMacro(car(a1), cdr(a1), envs, addResult);
           case try_asterisk_:
             try {
-              return _evaluate(a1, envs);
+              return _evaluate(a1, envs, addResult);
             } catch (_error) {
               ex = _error;
               if (empty_question_(remaining)) {
@@ -1161,30 +1161,30 @@ _evaluate = function(malExpr, envs, addResult) {
                 }
                 newEnv = {};
                 newEnv[extractJsValue(_ex)] = ex;
-                return _evaluate(catchExpr, addEnv(envs, newEnv));
+                return _evaluate(catchExpr, addEnv(envs, newEnv), addResult);
               }
             }
             break;
           default:
             malSymbol = head;
             malExpr = t1;
-            malInvokable = _evaluate(malSymbol, envs);
+            malInvokable = _evaluate(malSymbol, envs, addResult);
             switch (false) {
               case !malMacro_question_(malInvokable):
-                malExpr = expandMacro(head, t1, envs);
+                malExpr = expandMacro(head, t1, envs, addResult);
                 break;
               case !malCorePureFunction_question_(malInvokable):
                 fn = extractJsValue(malInvokable);
-                malArgs = map(evaluate(envs), malExpr);
+                malArgs = map(evaluate(envs, addResult), malExpr);
                 return fn(malArgs);
               case !malCoreEffectfulFunction_question_(malInvokable):
                 fn = extractJsValue(malInvokable);
-                malArgs = map(evaluate(envs), malExpr);
+                malArgs = map(evaluate(envs, addResult), malExpr);
                 addResult(fn(malArgs));
                 return malNil;
               case !malUserPureFunction_question_(malInvokable):
                 _ref2 = extractJsValue(malInvokable), localEnvs = _ref2.localEnvs, malExpression = _ref2.malExpression, malParameters = _ref2.malParameters;
-                malArgs = map(evaluate(envs), malExpr);
+                malArgs = map(evaluate(envs, addResult), malExpr);
                 malExpr = malExpression;
                 newEnv = createLocalEnv(malParameters, malArgs);
                 envs = addEnv(localEnvs, newEnv);
@@ -1206,35 +1206,35 @@ evaluate = function(envs, addResult) {
   };
 };
 
-expandMacro = function(malMacroSymbol, malArgs, envs) {
+expandMacro = function(malMacroSymbol, malArgs, envs, addResult) {
   var localEnvs, malExpression, malMacro, malParameters, newEnv, newEnvStack, _ref;
-  malMacro = _evaluate(malMacroSymbol, envs);
+  malMacro = _evaluate(malMacroSymbol, envs, addResult);
   _ref = extractJsValue(malMacro), localEnvs = _ref.localEnvs, malExpression = _ref.malExpression, malParameters = _ref.malParameters;
   newEnv = createLocalEnv(malParameters, malArgs);
   newEnvStack = addEnv(localEnvs, newEnv);
-  return _evaluate(malExpression, newEnvStack);
+  return _evaluate(malExpression, newEnvStack, addResult);
 };
 
-ignorable_question_ = function(malVal, envs) {
+ignorable_question_ = function(malVal, envs, addResult) {
   var jsString, symbol;
-  return malIgnore_question_(malVal) || (malList_question_(malVal) && malSymbol_question_(symbol = car(malVal)) && (((jsString = extractJsValue(symbol)) === 'ignore!') || ((jsString === 'ignoreIfTrue') && (extractJsValue(_evaluate(next(malVal), envs)))) || ((jsString === 'ignoreUnlessTrue') && !(extractJsValue(_evaluate(next(malVal), envs))))));
+  return malIgnore_question_(malVal) || (malList_question_(malVal) && malSymbol_question_(symbol = car(malVal)) && (((jsString = extractJsValue(symbol)) === 'ignore!') || ((jsString === 'ignoreIfTrue') && (extractJsValue(_evaluate(next(malVal), envs, addResult)))) || ((jsString === 'ignoreUnlessTrue') && !(extractJsValue(_evaluate(next(malVal), envs, addResult))))));
 };
 
-reduceLet_asterisk_ = function(envs, list) {
+reduceLet_asterisk_ = function(envs, list, addResult) {
   var envValue, jsKey, newEnv, _envs;
   newEnv = {};
   _envs = addEnv(envs, newEnv);
   while (!empty_question_(list)) {
     jsKey = extractJsValue(list.value);
     list = recurse(list);
-    envValue = _evaluate(list.value, _envs);
+    envValue = _evaluate(list.value, _envs, addResult);
     newEnv[jsKey] = envValue;
     list = recurse(list);
   }
   return newEnv;
 };
 
-reduceLetrec_asterisk_ = function(envs, list) {
+reduceLetrec_asterisk_ = function(envs, list, addResult) {
   var envValue, jsKey, newEnv, _envs, _malExpr;
   newEnv = {};
   _envs = addEnv(envs, newEnv);
@@ -1242,7 +1242,7 @@ reduceLetrec_asterisk_ = function(envs, list) {
     jsKey = extractJsValue(list.value);
     list = recurse(list);
     _malExpr = fromArray([createMalSymbol("fix"), fromArray([createMalSymbol("fn*"), fromArray([jsKey]), list.value])]);
-    envValue = _evaluate(_malExpr, _envs);
+    envValue = _evaluate(_malExpr, _envs, addResult);
     newEnv[jsKey] = envValue;
     list = recurse(list);
   }
