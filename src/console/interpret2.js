@@ -137,7 +137,8 @@ function translateHistory(promptLabel, command) {
         return translateSubmit(promptLabel, command.submit);
     }
   }
-  return [];
+  //return [];
+  return [{}, {}];
 }
 
 function translateClearConsole() {
