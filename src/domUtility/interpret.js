@@ -64,12 +64,6 @@ function modifyElement(node, config) {
             createAndAttachElement(node, config.children[op][index]);
           }
           break;
-        case 'remove':
-          for (var index in config.children[op]) {
-            var child = findChild(node, config.children[op][index]);
-            child.parentNode.removeChild(child);
-          }
-          break;
         case 'modify':
           for (var index in config.children[op]) {
             modifyElement(
@@ -77,6 +71,18 @@ function modifyElement(node, config) {
               config.children[op][index].changes);
           }
           break;
+        case 'remove':
+          for (var index in config.children[op]) {
+            var child = findChild(node, config.children[op][index]);
+            child.parentNode.removeChild(child);
+          }
+          break;
+        case 'removeAll':
+          var children = findChildren(node, config.children[op]);
+          var parent = children.length > 0 ? children[0].parentNode : null;
+          for (var index in children) {
+            parent.removeChild(children[0]);
+          }
         default:
           throw new Error('invalid \"modifyElement.children\" mode');
       }
@@ -124,6 +130,19 @@ function findChild(parent, config) {
       return parent.querySelectorAll(config.key.query)[config.key.index];
     case 'index':
       return parent.childNodes[config.key];
+    default:
+      throw new Error('Invalid \"findChild\" mode');
+  }
+}
+
+function findChildren(parent, config) {
+  switch (config.mode) {
+    case 'tag':
+      return parent.getElementsByTagName(config.key.tag);
+    case 'class':
+      return parent.getElementsByClassName(config.key.class);
+    case 'query':
+      return parent.querySelectorAll(config.key.query);
     default:
       throw new Error('Invalid \"findChild\" mode');
   }

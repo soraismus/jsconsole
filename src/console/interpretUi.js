@@ -7,6 +7,9 @@ function interpretUi(command) {
         }
       };
 
+    case 'clearConsole':
+      return { clearConsole: true };
+
     case 'deleteLeftChar':
       return {
         cursor: {
@@ -28,6 +31,16 @@ function interpretUi(command) {
         }
       };
 
+    case 'fastForwardHistory':
+      return {
+        cursor: {
+          pre: { replace: command.cursorText },
+          post: { erase: true }},
+        history: {
+          fastForward: command.historyEntry
+        }
+      };
+
     case 'moveCursorLeft':
       return {
         cursor: {
@@ -44,17 +57,26 @@ function interpretUi(command) {
         }
       };
 
-    case 'restoreCache':
+    case 'moveCursorToEnd':
       return {
         cursor: {
-          pre: { replace: command.cursorText },
-          post: { erase: true }},
-        history: {
-          fastForward: command.historyEntry
+          pre: { append: command.__promptTextPost },
+          post: { erase: true }
         }
       };
 
-    case 'fastForwardHistory':
+    case 'moveCursorToStart':
+      return {
+        cursor: {
+          pre: { erase: true },
+          post: { replace: command.__promptText + command.__promptTextPost }
+        }
+      };
+
+    case 'noOp':
+      return {};
+
+    case 'restoreCache':
       return {
         cursor: {
           pre: { replace: command.cursorText },
@@ -89,8 +111,6 @@ function interpretUi(command) {
         display: command.display,
       };
 
-    case 'noOp':
-      return {};
   }
 }
 

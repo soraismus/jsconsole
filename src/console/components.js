@@ -25,8 +25,7 @@ var oldPromptResponse = {
 };
 
 var _prompt = {
-  'jsconsole-prompt': true,
-  'jsconsole-line-item': true
+  'jsconsole-prompt': true
 };
 
 function createDisplay(text) {

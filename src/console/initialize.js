@@ -7,15 +7,34 @@ var modifyElement     = require('../domUtility/interpret').modifyElement;
 var translate         = require('./interpret2').translate;
 var translateDisplay  = require('./interpret2').translateDisplay;
 
-var backspace =  8;
-var _delete   = 46;
-var down      = 40;
-var enter     = 13;
-var left      = 37;
-var right     = 39;
-var up        = 38;
+var a         =  97;
+var backspace =   8;
+var _delete   =  46;
+var down      =  40;
+var e         = 101;
+var enter     =  13;
+var l         = 108;
+var left      =  37;
+var right     =  39;
+var up        =  38;
 
 function convertEventToCommand(event, transform) {
+  if (event.ctrlKey) {
+    event.preventDefault();
+    switch (event.charCode) {
+      case a:
+        return interpreter.moveCursorToStart(appState);
+      case e:
+        return interpreter.moveCursorToEnd(appState);
+      case l:
+        return interpreter.clearConsole(appState);
+    }
+    return interpreter.noOp(appState);
+  }
+  if (event.altKey) {
+    event.preventDefault();
+    return interpreter.noOp(appState);
+  }
   switch (event.keyCode) {
     case enter:
       return interpreter.submit(appState, transform);
@@ -38,13 +57,9 @@ function convertEventToCommand(event, transform) {
       event.preventDefault();
       return interpreter.deleteRightChar(appState);
     default:
-      //console.log(event.charCode);
-      //if (event.charCode === 97)
-      //{
-      //  display('Lisp>', 'HELLO, WORLD');
-      //  return;
-      //}
-      return interpreter.addChar(appState, String.fromCharCode(event.charCode));
+      return interpreter.addChar(
+        appState,
+        String.fromCharCode(event.charCode));
   }
 }
 

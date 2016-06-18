@@ -2,48 +2,27 @@ function addChar(appState, char) {
   return { commandType: 'addChar', char: char };
 }
 
+function clearConsole(appState) {
+  return { commandType: 'clearConsole' };
+}
+
 function deleteLeftChar(appState) {
   var innerText = appState.cursor.pre;
   var end = innerText.length - 1;
   return innerText.length === 0
-    ? { commandType: 'noOp' }
+    ? noOp(appState)
     : { commandType: 'deleteLeftChar', end: end, innerText: innerText };
 }
 
 function deleteRightChar(appState) {
   var innerText = appState.cursor.post;
   return innerText.length == 0
-    ? { commandType: 'noOp' }
+    ? noOp(appState)
     : { commandType: 'deleteRightChar' };
 }
 
 function display(appState, text) {
-  console.log("DISPLAY");
   return { commandType: 'display', text: text };
-}
-
-function moveCursorLeft(appState) {
-  console.log('moveCursorLeft');
-  console.log('appState.cursor.pre', appState.cursor.pre);
-  console.log('appState.cursor.post', appState.cursor.post);
-  var __promptText = appState.cursor.pre;
-  var __promptTextPost = appState.cursor.post;
-  var index = __promptText.length - 1;
-  var command = __promptText.length === 0
-    ? { commandType: 'noOp' }
-    : { commandType: 'moveCursorLeft', index: index, __promptText: __promptText };
-  console.log('command.index', command.index);
-  console.log('command.__promptText', command.__promptText);
-  return command;
-}
-
-function moveCursorRight(appState) {
-  var __promptText = appState.cursor.pre;
-  var __promptTextPost = appState.cursor.post;
-  var length = __promptTextPost.length;
-  return length === 0
-    ? { commandType: 'noOp' }
-    : { commandType: 'moveCursorRight', length: length, __promptTextPost: __promptTextPost };
 }
 
 function fastForwardHistory(appState) {
@@ -58,7 +37,7 @@ function fastForwardHistory(appState) {
         historyEntry: cursorText
       };
     } else {
-      return { commandType: 'noOp' };
+      return noOp(appState);
     }
   }
 
@@ -76,9 +55,60 @@ function fastForwardHistory(appState) {
   };
 }
 
+function moveCursorLeft(appState) {
+  var __promptText = appState.cursor.pre;
+  var __promptTextPost = appState.cursor.post;
+  var index = __promptText.length - 1;
+  var command = __promptText.length === 0
+    ? noOp(appState)
+    : {
+        commandType: 'moveCursorLeft',
+        index: index,
+        __promptText: __promptText
+      };
+  return command;
+}
+
+function moveCursorRight(appState) {
+  var __promptText = appState.cursor.pre;
+  var __promptTextPost = appState.cursor.post;
+  var length = __promptTextPost.length;
+  return length === 0
+    ? noOp(appState)
+    : {
+        commandType: 'moveCursorRight',
+        length: length,
+        __promptTextPost: __promptTextPost
+      };
+}
+
+function moveCursorToEnd(appState) {
+  var __promptText = appState.cursor.pre;
+  var __promptTextPost = appState.cursor.post;
+  return {
+      commandType: 'moveCursorToEnd',
+      __promptText: __promptText,
+      __promptTextPost: __promptTextPost
+    };
+}
+
+function moveCursorToStart(appState) {
+  var __promptText = appState.cursor.pre;
+  var __promptTextPost = appState.cursor.post;
+  return {
+      commandType: 'moveCursorToStart',
+      __promptText: __promptText,
+      __promptTextPost: __promptTextPost
+    };
+}
+
+function noOp(appState) {
+  return { commandType: 'noOp' };
+}
+
 function rewindHistory(appState) {
   if (appState.history.past.length <= 0) {
-    return { commandType: 'noOp' };
+    return noOp(appState);
   }
 
   var preCursorText = appState.cursor.pre;
@@ -122,18 +152,18 @@ function submit(appState, transform) {
   };
 }
 
-function getLast(array) {
-  return array[array.length - 1];
-}
-
 var interpreter = {
   addChar: addChar,
+  clearConsole: clearConsole,
   deleteLeftChar: deleteLeftChar,
   deleteRightChar: deleteRightChar,
   display: display,
   fastForwardHistory: fastForwardHistory,
   moveCursorLeft: moveCursorLeft,
   moveCursorRight: moveCursorRight,
+  moveCursorToEnd: moveCursorToEnd,
+  moveCursorToStart: moveCursorToStart,
+  noOp: noOp,
   rewindHistory: rewindHistory,
   submit: submit,
 };

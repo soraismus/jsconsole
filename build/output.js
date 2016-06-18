@@ -42,8 +42,7 @@ var oldPromptResponse = {
 };
 
 var _prompt = {
-  'jsconsole-prompt': true,
-  'jsconsole-line-item': true
+  'jsconsole-prompt': true
 };
 
 function createDisplay(text) {
@@ -119,15 +118,34 @@ var modifyElement     = require('../domUtility/interpret').modifyElement;
 var translate         = require('./interpret2').translate;
 var translateDisplay  = require('./interpret2').translateDisplay;
 
-var backspace =  8;
-var _delete   = 46;
-var down      = 40;
-var enter     = 13;
-var left      = 37;
-var right     = 39;
-var up        = 38;
+var a         =  97;
+var backspace =   8;
+var _delete   =  46;
+var down      =  40;
+var e         = 101;
+var enter     =  13;
+var l         = 108;
+var left      =  37;
+var right     =  39;
+var up        =  38;
 
 function convertEventToCommand(event, transform) {
+  if (event.ctrlKey) {
+    event.preventDefault();
+    switch (event.charCode) {
+      case a:
+        return interpreter.moveCursorToStart(appState);
+      case e:
+        return interpreter.moveCursorToEnd(appState);
+      case l:
+        return interpreter.clearConsole(appState);
+    }
+    return interpreter.noOp(appState);
+  }
+  if (event.altKey) {
+    event.preventDefault();
+    return interpreter.noOp(appState);
+  }
   switch (event.keyCode) {
     case enter:
       return interpreter.submit(appState, transform);
@@ -150,13 +168,9 @@ function convertEventToCommand(event, transform) {
       event.preventDefault();
       return interpreter.deleteRightChar(appState);
     default:
-      //console.log(event.charCode);
-      //if (event.charCode === 97)
-      //{
-      //  display('Lisp>', 'HELLO, WORLD');
-      //  return;
-      //}
-      return interpreter.addChar(appState, String.fromCharCode(event.charCode));
+      return interpreter.addChar(
+        appState,
+        String.fromCharCode(event.charCode));
   }
 }
 
@@ -243,8 +257,8 @@ var createOldPromptReply = components.createOldPromptReply;
 var createPrompt         = components.createPrompt;
 var childrenUtility      = require('../domUtility/children');
 var childByClass         = childrenUtility.childByClass;
-var childByQuery         = childrenUtility.childByQuery;
 var childByTag           = childrenUtility.childByTag;
+var childrenByClass      = childrenUtility.childrenByClass;
 
 var magicNumber = 11;
 
@@ -306,9 +320,11 @@ function interpret(appState, command) {
 function translate(promptLabel, command) {
   var cursorChanges = [];
   var displayChanges = [];
-  var historyChanges = [[], []];
+  var historyChanges = [{}, {}];
   for (var outerKey in command) {
     switch (outerKey) {
+      case 'clearConsole':
+        return translateClearConsole();
       case 'cursor':
         cursorChanges =
           translateCursor(promptLabel, command.cursor);
@@ -325,7 +341,6 @@ function translate(promptLabel, command) {
         break;
     }
   }
-  //return cursorChanges.concat(historyChanges, displayChanges);
   return cursorChanges
     .concat(
       [historyChanges[0]],
@@ -367,19 +382,17 @@ function translateCursor(promptLabel, command) {
 function translateHistory(promptLabel, command) {
   for (var innerKey in command) {
     switch (innerKey) {
-      //case 'fastForward':
-      //  break;
-      //case 'display':
-      //  console.log('TRANSLATE-HISTORY DISPLAY');
-      //  return translateDisplay(promptLabel, command.display.text);
-      //  break;
-      //case 'rewind':
-      //  break;
+      case 'clearConsole':
+        return translateClearConsole();
       case 'submit':
-        return translateSubmittal(promptLabel, command.submit);
+        return translateSubmit(promptLabel, command.submit);
     }
   }
   return [];
+}
+
+function translateClearConsole() {
+  return [{ children: { removeAll: childrenByClass(lineItemClass) }}, {}];
 }
 
 function translateDisplay(promptLabel, displayEffects) {
@@ -399,7 +412,7 @@ function translateDisplay(promptLabel, displayEffects) {
   }];
 }
 
-function translateSubmittal(promptLabel, command) {
+function translateSubmit(promptLabel, command) {
   var removals = [childByClass(promptClass, 0)];
   if (command.display.length >= magicNumber) {
     removals.push(
@@ -458,6 +471,11 @@ function interpretAppState(command) {
         };
       };
 
+    case 'clearConsole':
+      return function (appState) {
+        return appState;
+      };
+
     case 'deleteLeftChar':
       return function (appState) {
         return {
@@ -485,80 +503,8 @@ function interpretAppState(command) {
         return appState;
       };
 
-    case 'moveCursorLeft':
-      return function (appState) {
-        return {
-          history: appState.history, 
-          cursor: {
-            pre: appState.cursor.pre.slice(0, command.index),
-            post: command.__promptText[command.index] + appState.cursor.post
-          }
-        };
-      };
-
-    case 'moveCursorRight':
-      return function (appState) {
-        var __promptText = appState.cursor.pre;
-        var index = __promptText.length - 1;
-        return {
-          history: appState.history, 
-          cursor: {
-            pre: __promptText + command.__promptTextPost[0],
-            post: command.__promptTextPost.slice(1)
-          }
-        };
-      };
-
-    case 'restoreCache':
-      return function (appState) {
-        console.log('RESTORE-CACHE');
-        console.log('orig appstate.cursor.pre: ', appState.cursor.pre);
-        console.log('orig appstate.cursor.post: ', appState.cursor.post);
-        console.log('orig appstate.history.past: ', appState.history.past);
-        console.log('orig appstate.history.future: ', appState.history.future);
-        console.log('orig appstate.history.cache: ', appState.history.cache);
-        console.log('orig appstate.history.display: ', appState.history.display);
-
-        var preCursorText = appState.cursor.pre;
-        var postCursorText = appState.cursor.post;
-        var cursorText = (preCursorText + postCursorText).trim();
-
-        var entry = appState.history.cache[0];
-        var pastCopy = appState.history.past.slice();
-
-        pastCopy.push(cursorText);
-
-        var result = {
-          cursor: {
-            pre: entry,
-            post: ''
-          },
-          history: {
-            past: pastCopy,
-            future: appState.history.future,
-            cache: [],
-            display: appState.history.display
-          }
-        };
-        console.log('new appstate.cursor.pre: ', result.cursor.pre);
-        console.log('new appstate.cursor.post: ', result.cursor.post);
-        console.log('new appstate.history.past: ', result.history.past);
-        console.log('new appstate.history.future: ', result.history.future);
-        console.log('new appstate.history.cache: ', result.history.cache);
-        console.log('new appstate.history.display: ', result.history.display);
-        return result;
-      };
-
     case 'fastForwardHistory':
       return function (appState) {
-        console.log('FASTFORWARD');
-        console.log('orig appstate.cursor.pre: ', appState.cursor.pre);
-        console.log('orig appstate.cursor.post: ', appState.cursor.post);
-        console.log('orig appstate.history.past: ', appState.history.past);
-        console.log('orig appstate.history.future: ', appState.history.future);
-        console.log('orig appstate.history.cache: ', appState.history.cache);
-        console.log('orig appstate.history.display: ', appState.history.display);
-
         var preCursorText = appState.cursor.pre;
         var postCursorText = appState.cursor.post;
         var cursorText = (preCursorText + postCursorText).trim();
@@ -587,25 +533,88 @@ function interpretAppState(command) {
             display: appState.history.display
           }
         };
-        console.log('new appstate.cursor.pre: ', result.cursor.pre);
-        console.log('new appstate.cursor.post: ', result.cursor.post);
-        console.log('new appstate.history.past: ', result.history.past);
-        console.log('new appstate.history.future: ', result.history.future);
-        console.log('new appstate.history.cache: ', result.history.cache);
-        console.log('new appstate.history.display: ', result.history.display);
+        return result;
+      };
+
+    case 'moveCursorLeft':
+      return function (appState) {
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: appState.cursor.pre.slice(0, command.index),
+            post: command.__promptText[command.index] + appState.cursor.post
+          }
+        };
+      };
+
+    case 'moveCursorRight':
+      return function (appState) {
+        var __promptText = appState.cursor.pre;
+        var index = __promptText.length - 1;
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: __promptText + command.__promptTextPost[0],
+            post: command.__promptTextPost.slice(1)
+          }
+        };
+      };
+
+    case 'moveCursorToEnd':
+      return function (appState) {
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: command.__promptText + command.__promptTextPost,
+            post: ''
+          }
+        };
+      };
+
+    case 'moveCursorToStart':
+      return function (appState) {
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: '',
+            post: command.__promptText + command.__promptTextPost
+          }
+        };
+      };
+
+    case 'noOp':
+      return function (appState) {
+        return appState;
+      };
+
+    case 'restoreCache':
+      return function (appState) {
+        var preCursorText = appState.cursor.pre;
+        var postCursorText = appState.cursor.post;
+        var cursorText = (preCursorText + postCursorText).trim();
+
+        var entry = appState.history.cache[0];
+        var pastCopy = appState.history.past.slice();
+
+        pastCopy.push(cursorText);
+
+        var result = {
+          cursor: {
+            pre: entry,
+            post: ''
+          },
+          history: {
+            past: pastCopy,
+            future: appState.history.future,
+            cache: [],
+            display: appState.history.display
+          }
+        };
         return result;
       };
 
     case 'rewindHistory':
       return function (appState) {
-        console.log('REWIND');
-        console.log('orig appstate.cursor.pre: ', appState.cursor.pre);
-        console.log('orig appstate.cursor.post: ', appState.cursor.post);
-        console.log('orig appstate.history.past: ', appState.history.past);
-        console.log('orig appstate.history.future: ', appState.history.future);
-        console.log('orig appstate.history.cache: ', appState.history.cache);
-        console.log('orig appstate.history.display: ', appState.history.display);
-
         var preCursorText = appState.cursor.pre;
         var postCursorText = appState.cursor.post;
         var cursorText = (preCursorText + postCursorText).trim();
@@ -634,25 +643,11 @@ function interpretAppState(command) {
             display: appState.history.display
           }
         };
-        console.log('new appstate.cursor.pre: ', result.cursor.pre);
-        console.log('new appstate.cursor.post: ', result.cursor.post);
-        console.log('new appstate.history.past: ', result.history.past);
-        console.log('new appstate.history.future: ', result.history.future);
-        console.log('new appstate.history.cache: ', result.history.cache);
-        console.log('new appstate.history.display: ', result.history.display);
         return result;
       };
 
     case 'submit':
       return function (appState) {
-        console.log('SUBMIT');
-        console.log('orig appstate.cursor.pre: ', appState.cursor.pre);
-        console.log('orig appstate.cursor.post: ', appState.cursor.post);
-        console.log('orig appstate.history.past: ', appState.history.past);
-        console.log('orig appstate.history.future: ', appState.history.future);
-        console.log('orig appstate.history.cache: ', appState.history.cache);
-        console.log('orig appstate.history.display: ', appState.history.display);
-
         var preCursorText = appState.cursor.pre;
         var postCursorText = appState.cursor.post;
         var cursorText = (preCursorText + postCursorText).trim();
@@ -688,18 +683,7 @@ function interpretAppState(command) {
             display: displayCopy
           }
         };
-        console.log('new appstate.cursor.pre: ', result.cursor.pre);
-        console.log('new appstate.cursor.post: ', result.cursor.post);
-        console.log('new appstate.history.past: ', result.history.past);
-        console.log('new appstate.history.future: ', result.history.future);
-        console.log('new appstate.history.cache: ', result.history.cache);
-        console.log('new appstate.history.display: ', result.history.display);
         return result;
-      };
-
-    case 'noOp':
-      return function (appState) {
-        return appState;
       };
 
   }
@@ -716,6 +700,9 @@ function interpretUi(command) {
           pre: { append: command.char }
         }
       };
+
+    case 'clearConsole':
+      return { clearConsole: true };
 
     case 'deleteLeftChar':
       return {
@@ -738,6 +725,16 @@ function interpretUi(command) {
         }
       };
 
+    case 'fastForwardHistory':
+      return {
+        cursor: {
+          pre: { replace: command.cursorText },
+          post: { erase: true }},
+        history: {
+          fastForward: command.historyEntry
+        }
+      };
+
     case 'moveCursorLeft':
       return {
         cursor: {
@@ -754,17 +751,26 @@ function interpretUi(command) {
         }
       };
 
-    case 'restoreCache':
+    case 'moveCursorToEnd':
       return {
         cursor: {
-          pre: { replace: command.cursorText },
-          post: { erase: true }},
-        history: {
-          fastForward: command.historyEntry
+          pre: { append: command.__promptTextPost },
+          post: { erase: true }
         }
       };
 
-    case 'fastForwardHistory':
+    case 'moveCursorToStart':
+      return {
+        cursor: {
+          pre: { erase: true },
+          post: { replace: command.__promptText + command.__promptTextPost }
+        }
+      };
+
+    case 'noOp':
+      return {};
+
+    case 'restoreCache':
       return {
         cursor: {
           pre: { replace: command.cursorText },
@@ -799,8 +805,6 @@ function interpretUi(command) {
         display: command.display,
       };
 
-    case 'noOp':
-      return {};
   }
 }
 
@@ -811,48 +815,27 @@ function addChar(appState, char) {
   return { commandType: 'addChar', char: char };
 }
 
+function clearConsole(appState) {
+  return { commandType: 'clearConsole' };
+}
+
 function deleteLeftChar(appState) {
   var innerText = appState.cursor.pre;
   var end = innerText.length - 1;
   return innerText.length === 0
-    ? { commandType: 'noOp' }
+    ? noOp(appState)
     : { commandType: 'deleteLeftChar', end: end, innerText: innerText };
 }
 
 function deleteRightChar(appState) {
   var innerText = appState.cursor.post;
   return innerText.length == 0
-    ? { commandType: 'noOp' }
+    ? noOp(appState)
     : { commandType: 'deleteRightChar' };
 }
 
 function display(appState, text) {
-  console.log("DISPLAY");
   return { commandType: 'display', text: text };
-}
-
-function moveCursorLeft(appState) {
-  console.log('moveCursorLeft');
-  console.log('appState.cursor.pre', appState.cursor.pre);
-  console.log('appState.cursor.post', appState.cursor.post);
-  var __promptText = appState.cursor.pre;
-  var __promptTextPost = appState.cursor.post;
-  var index = __promptText.length - 1;
-  var command = __promptText.length === 0
-    ? { commandType: 'noOp' }
-    : { commandType: 'moveCursorLeft', index: index, __promptText: __promptText };
-  console.log('command.index', command.index);
-  console.log('command.__promptText', command.__promptText);
-  return command;
-}
-
-function moveCursorRight(appState) {
-  var __promptText = appState.cursor.pre;
-  var __promptTextPost = appState.cursor.post;
-  var length = __promptTextPost.length;
-  return length === 0
-    ? { commandType: 'noOp' }
-    : { commandType: 'moveCursorRight', length: length, __promptTextPost: __promptTextPost };
 }
 
 function fastForwardHistory(appState) {
@@ -867,7 +850,7 @@ function fastForwardHistory(appState) {
         historyEntry: cursorText
       };
     } else {
-      return { commandType: 'noOp' };
+      return noOp(appState);
     }
   }
 
@@ -885,9 +868,60 @@ function fastForwardHistory(appState) {
   };
 }
 
+function moveCursorLeft(appState) {
+  var __promptText = appState.cursor.pre;
+  var __promptTextPost = appState.cursor.post;
+  var index = __promptText.length - 1;
+  var command = __promptText.length === 0
+    ? noOp(appState)
+    : {
+        commandType: 'moveCursorLeft',
+        index: index,
+        __promptText: __promptText
+      };
+  return command;
+}
+
+function moveCursorRight(appState) {
+  var __promptText = appState.cursor.pre;
+  var __promptTextPost = appState.cursor.post;
+  var length = __promptTextPost.length;
+  return length === 0
+    ? noOp(appState)
+    : {
+        commandType: 'moveCursorRight',
+        length: length,
+        __promptTextPost: __promptTextPost
+      };
+}
+
+function moveCursorToEnd(appState) {
+  var __promptText = appState.cursor.pre;
+  var __promptTextPost = appState.cursor.post;
+  return {
+      commandType: 'moveCursorToEnd',
+      __promptText: __promptText,
+      __promptTextPost: __promptTextPost
+    };
+}
+
+function moveCursorToStart(appState) {
+  var __promptText = appState.cursor.pre;
+  var __promptTextPost = appState.cursor.post;
+  return {
+      commandType: 'moveCursorToStart',
+      __promptText: __promptText,
+      __promptTextPost: __promptTextPost
+    };
+}
+
+function noOp(appState) {
+  return { commandType: 'noOp' };
+}
+
 function rewindHistory(appState) {
   if (appState.history.past.length <= 0) {
-    return { commandType: 'noOp' };
+    return noOp(appState);
   }
 
   var preCursorText = appState.cursor.pre;
@@ -931,18 +965,18 @@ function submit(appState, transform) {
   };
 }
 
-function getLast(array) {
-  return array[array.length - 1];
-}
-
 var interpreter = {
   addChar: addChar,
+  clearConsole: clearConsole,
   deleteLeftChar: deleteLeftChar,
   deleteRightChar: deleteRightChar,
   display: display,
   fastForwardHistory: fastForwardHistory,
   moveCursorLeft: moveCursorLeft,
   moveCursorRight: moveCursorRight,
+  moveCursorToEnd: moveCursorToEnd,
+  moveCursorToStart: moveCursorToStart,
+  noOp: noOp,
   rewindHistory: rewindHistory,
   submit: submit,
 };
@@ -958,10 +992,21 @@ function identifyChild(mode) {
   };
 }
 
+function identifyChildren(mode) {
+  return function(specifier, index) {
+    var result = { mode: mode, key: {}};
+    result.key[mode] = specifier;
+    return result;
+  };
+}
+
 module.exports = {
   childByClass: identifyChild('class'),
   childByQuery: identifyChild('query'),
-  childByTag: identifyChild('tag')
+  childByTag: identifyChild('tag'),
+  childrenByClass: identifyChildren('class'),
+  childrenByQuery: identifyChildren('query'),
+  childrenByTag: identifyChildren('tag')
 };
 
 },{}],10:[function(require,module,exports){
@@ -1074,12 +1119,6 @@ function modifyElement(node, config) {
             createAndAttachElement(node, config.children[op][index]);
           }
           break;
-        case 'remove':
-          for (var index in config.children[op]) {
-            var child = findChild(node, config.children[op][index]);
-            child.parentNode.removeChild(child);
-          }
-          break;
         case 'modify':
           for (var index in config.children[op]) {
             modifyElement(
@@ -1087,6 +1126,18 @@ function modifyElement(node, config) {
               config.children[op][index].changes);
           }
           break;
+        case 'remove':
+          for (var index in config.children[op]) {
+            var child = findChild(node, config.children[op][index]);
+            child.parentNode.removeChild(child);
+          }
+          break;
+        case 'removeAll':
+          var children = findChildren(node, config.children[op]);
+          var parent = children.length > 0 ? children[0].parentNode : null;
+          for (var index in children) {
+            parent.removeChild(children[0]);
+          }
         default:
           throw new Error('invalid \"modifyElement.children\" mode');
       }
@@ -1134,6 +1185,19 @@ function findChild(parent, config) {
       return parent.querySelectorAll(config.key.query)[config.key.index];
     case 'index':
       return parent.childNodes[config.key];
+    default:
+      throw new Error('Invalid \"findChild\" mode');
+  }
+}
+
+function findChildren(parent, config) {
+  switch (config.mode) {
+    case 'tag':
+      return parent.getElementsByTagName(config.key.tag);
+    case 'class':
+      return parent.getElementsByClassName(config.key.class);
+    case 'query':
+      return parent.querySelectorAll(config.key.query);
     default:
       throw new Error('Invalid \"findChild\" mode');
   }

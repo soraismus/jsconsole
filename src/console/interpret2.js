@@ -6,8 +6,8 @@ var createOldPromptReply = components.createOldPromptReply;
 var createPrompt         = components.createPrompt;
 var childrenUtility      = require('../domUtility/children');
 var childByClass         = childrenUtility.childByClass;
-var childByQuery         = childrenUtility.childByQuery;
 var childByTag           = childrenUtility.childByTag;
+var childrenByClass      = childrenUtility.childrenByClass;
 
 var magicNumber = 11;
 
@@ -69,9 +69,11 @@ function interpret(appState, command) {
 function translate(promptLabel, command) {
   var cursorChanges = [];
   var displayChanges = [];
-  var historyChanges = [[], []];
+  var historyChanges = [{}, {}];
   for (var outerKey in command) {
     switch (outerKey) {
+      case 'clearConsole':
+        return translateClearConsole();
       case 'cursor':
         cursorChanges =
           translateCursor(promptLabel, command.cursor);
@@ -88,7 +90,6 @@ function translate(promptLabel, command) {
         break;
     }
   }
-  //return cursorChanges.concat(historyChanges, displayChanges);
   return cursorChanges
     .concat(
       [historyChanges[0]],
@@ -130,19 +131,17 @@ function translateCursor(promptLabel, command) {
 function translateHistory(promptLabel, command) {
   for (var innerKey in command) {
     switch (innerKey) {
-      //case 'fastForward':
-      //  break;
-      //case 'display':
-      //  console.log('TRANSLATE-HISTORY DISPLAY');
-      //  return translateDisplay(promptLabel, command.display.text);
-      //  break;
-      //case 'rewind':
-      //  break;
+      case 'clearConsole':
+        return translateClearConsole();
       case 'submit':
-        return translateSubmittal(promptLabel, command.submit);
+        return translateSubmit(promptLabel, command.submit);
     }
   }
   return [];
+}
+
+function translateClearConsole() {
+  return [{ children: { removeAll: childrenByClass(lineItemClass) }}, {}];
 }
 
 function translateDisplay(promptLabel, displayEffects) {
@@ -162,7 +161,7 @@ function translateDisplay(promptLabel, displayEffects) {
   }];
 }
 
-function translateSubmittal(promptLabel, command) {
+function translateSubmit(promptLabel, command) {
   var removals = [childByClass(promptClass, 0)];
   if (command.display.length >= magicNumber) {
     removals.push(

@@ -11,6 +11,11 @@ function interpretAppState(command) {
         };
       };
 
+    case 'clearConsole':
+      return function (appState) {
+        return appState;
+      };
+
     case 'deleteLeftChar':
       return function (appState) {
         return {
@@ -38,80 +43,8 @@ function interpretAppState(command) {
         return appState;
       };
 
-    case 'moveCursorLeft':
-      return function (appState) {
-        return {
-          history: appState.history, 
-          cursor: {
-            pre: appState.cursor.pre.slice(0, command.index),
-            post: command.__promptText[command.index] + appState.cursor.post
-          }
-        };
-      };
-
-    case 'moveCursorRight':
-      return function (appState) {
-        var __promptText = appState.cursor.pre;
-        var index = __promptText.length - 1;
-        return {
-          history: appState.history, 
-          cursor: {
-            pre: __promptText + command.__promptTextPost[0],
-            post: command.__promptTextPost.slice(1)
-          }
-        };
-      };
-
-    case 'restoreCache':
-      return function (appState) {
-        console.log('RESTORE-CACHE');
-        console.log('orig appstate.cursor.pre: ', appState.cursor.pre);
-        console.log('orig appstate.cursor.post: ', appState.cursor.post);
-        console.log('orig appstate.history.past: ', appState.history.past);
-        console.log('orig appstate.history.future: ', appState.history.future);
-        console.log('orig appstate.history.cache: ', appState.history.cache);
-        console.log('orig appstate.history.display: ', appState.history.display);
-
-        var preCursorText = appState.cursor.pre;
-        var postCursorText = appState.cursor.post;
-        var cursorText = (preCursorText + postCursorText).trim();
-
-        var entry = appState.history.cache[0];
-        var pastCopy = appState.history.past.slice();
-
-        pastCopy.push(cursorText);
-
-        var result = {
-          cursor: {
-            pre: entry,
-            post: ''
-          },
-          history: {
-            past: pastCopy,
-            future: appState.history.future,
-            cache: [],
-            display: appState.history.display
-          }
-        };
-        console.log('new appstate.cursor.pre: ', result.cursor.pre);
-        console.log('new appstate.cursor.post: ', result.cursor.post);
-        console.log('new appstate.history.past: ', result.history.past);
-        console.log('new appstate.history.future: ', result.history.future);
-        console.log('new appstate.history.cache: ', result.history.cache);
-        console.log('new appstate.history.display: ', result.history.display);
-        return result;
-      };
-
     case 'fastForwardHistory':
       return function (appState) {
-        console.log('FASTFORWARD');
-        console.log('orig appstate.cursor.pre: ', appState.cursor.pre);
-        console.log('orig appstate.cursor.post: ', appState.cursor.post);
-        console.log('orig appstate.history.past: ', appState.history.past);
-        console.log('orig appstate.history.future: ', appState.history.future);
-        console.log('orig appstate.history.cache: ', appState.history.cache);
-        console.log('orig appstate.history.display: ', appState.history.display);
-
         var preCursorText = appState.cursor.pre;
         var postCursorText = appState.cursor.post;
         var cursorText = (preCursorText + postCursorText).trim();
@@ -140,25 +73,88 @@ function interpretAppState(command) {
             display: appState.history.display
           }
         };
-        console.log('new appstate.cursor.pre: ', result.cursor.pre);
-        console.log('new appstate.cursor.post: ', result.cursor.post);
-        console.log('new appstate.history.past: ', result.history.past);
-        console.log('new appstate.history.future: ', result.history.future);
-        console.log('new appstate.history.cache: ', result.history.cache);
-        console.log('new appstate.history.display: ', result.history.display);
+        return result;
+      };
+
+    case 'moveCursorLeft':
+      return function (appState) {
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: appState.cursor.pre.slice(0, command.index),
+            post: command.__promptText[command.index] + appState.cursor.post
+          }
+        };
+      };
+
+    case 'moveCursorRight':
+      return function (appState) {
+        var __promptText = appState.cursor.pre;
+        var index = __promptText.length - 1;
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: __promptText + command.__promptTextPost[0],
+            post: command.__promptTextPost.slice(1)
+          }
+        };
+      };
+
+    case 'moveCursorToEnd':
+      return function (appState) {
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: command.__promptText + command.__promptTextPost,
+            post: ''
+          }
+        };
+      };
+
+    case 'moveCursorToStart':
+      return function (appState) {
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: '',
+            post: command.__promptText + command.__promptTextPost
+          }
+        };
+      };
+
+    case 'noOp':
+      return function (appState) {
+        return appState;
+      };
+
+    case 'restoreCache':
+      return function (appState) {
+        var preCursorText = appState.cursor.pre;
+        var postCursorText = appState.cursor.post;
+        var cursorText = (preCursorText + postCursorText).trim();
+
+        var entry = appState.history.cache[0];
+        var pastCopy = appState.history.past.slice();
+
+        pastCopy.push(cursorText);
+
+        var result = {
+          cursor: {
+            pre: entry,
+            post: ''
+          },
+          history: {
+            past: pastCopy,
+            future: appState.history.future,
+            cache: [],
+            display: appState.history.display
+          }
+        };
         return result;
       };
 
     case 'rewindHistory':
       return function (appState) {
-        console.log('REWIND');
-        console.log('orig appstate.cursor.pre: ', appState.cursor.pre);
-        console.log('orig appstate.cursor.post: ', appState.cursor.post);
-        console.log('orig appstate.history.past: ', appState.history.past);
-        console.log('orig appstate.history.future: ', appState.history.future);
-        console.log('orig appstate.history.cache: ', appState.history.cache);
-        console.log('orig appstate.history.display: ', appState.history.display);
-
         var preCursorText = appState.cursor.pre;
         var postCursorText = appState.cursor.post;
         var cursorText = (preCursorText + postCursorText).trim();
@@ -187,25 +183,11 @@ function interpretAppState(command) {
             display: appState.history.display
           }
         };
-        console.log('new appstate.cursor.pre: ', result.cursor.pre);
-        console.log('new appstate.cursor.post: ', result.cursor.post);
-        console.log('new appstate.history.past: ', result.history.past);
-        console.log('new appstate.history.future: ', result.history.future);
-        console.log('new appstate.history.cache: ', result.history.cache);
-        console.log('new appstate.history.display: ', result.history.display);
         return result;
       };
 
     case 'submit':
       return function (appState) {
-        console.log('SUBMIT');
-        console.log('orig appstate.cursor.pre: ', appState.cursor.pre);
-        console.log('orig appstate.cursor.post: ', appState.cursor.post);
-        console.log('orig appstate.history.past: ', appState.history.past);
-        console.log('orig appstate.history.future: ', appState.history.future);
-        console.log('orig appstate.history.cache: ', appState.history.cache);
-        console.log('orig appstate.history.display: ', appState.history.display);
-
         var preCursorText = appState.cursor.pre;
         var postCursorText = appState.cursor.post;
         var cursorText = (preCursorText + postCursorText).trim();
@@ -241,18 +223,7 @@ function interpretAppState(command) {
             display: displayCopy
           }
         };
-        console.log('new appstate.cursor.pre: ', result.cursor.pre);
-        console.log('new appstate.cursor.post: ', result.cursor.post);
-        console.log('new appstate.history.past: ', result.history.past);
-        console.log('new appstate.history.future: ', result.history.future);
-        console.log('new appstate.history.cache: ', result.history.cache);
-        console.log('new appstate.history.display: ', result.history.display);
         return result;
-      };
-
-    case 'noOp':
-      return function (appState) {
-        return appState;
       };
 
   }
