@@ -79,10 +79,10 @@ function modifyElement(node, config) {
           break;
         case 'removeAll':
           var children = findChildren(node, config.children[op]);
-          var parent = children.length > 0 ? children[0].parentNode : null;
           for (var index in children) {
-            parent.removeChild(children[0]);
+            children[index].parentNode.removeChild(children[index]);
           }
+          break;
         default:
           throw new Error('invalid \"modifyElement.children\" mode');
       }
@@ -136,16 +136,21 @@ function findChild(parent, config) {
 }
 
 function findChildren(parent, config) {
+  var htmlCollection;
   switch (config.mode) {
     case 'tag':
-      return parent.getElementsByTagName(config.key.tag);
+      htmlCollection = parent.getElementsByTagName(config.key.tag);
+      break;
     case 'class':
-      return parent.getElementsByClassName(config.key.class);
+      htmlCollection = parent.getElementsByClassName(config.key.class);
+      break;
     case 'query':
-      return parent.querySelectorAll(config.key.query);
+      htmlCollection = parent.querySelectorAll(config.key.query);
+      break;
     default:
       throw new Error('Invalid \"findChild\" mode');
   }
+  return Array.prototype.slice.call(htmlCollection);
 }
 
 function createAndAttachElement(parent, config) {
