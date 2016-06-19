@@ -164,6 +164,10 @@ function translateDisplay(promptLabel, displayEffects) {
 
 function translateSubmit(promptLabel, command) {
   var removals = [childByClass(promptClass, 0)];
+  var additions = [createPrompt(promptLabel)];
+  if (!command.response.effect) {
+    additions.unshift(createOldPromptReply(command.response.value));
+  }
   if (command.display.length >= magicNumber) {
     removals.push(
       childByClass(lineItemClass, 0),
@@ -189,11 +193,7 @@ function translateSubmit(promptLabel, command) {
         modify: [
           {
             child: childByClass(consoleClass, 0),
-            changes: { children: { add: [
-                createOldPromptReply(command.response),
-                createPrompt(promptLabel)
-              ]
-            }}
+            changes: { children: { add: additions }}
           }
         ]
       }

@@ -139,7 +139,9 @@ function submit(appState, transform) {
 
   var results = transform(text);
   var length = results.length;
-  var pureResult = results[length - 1].value;
+
+  var wrappedResponse = results[length - 1];
+
   var displayEffects = results
     .slice(0, length - 1)
     .filter(function (value) { return value.effect.type === 'display'; });
@@ -147,7 +149,7 @@ function submit(appState, transform) {
   return {
     commandType: 'submit',
     oldPrompt: text,
-    response: pureResult,
+    response: wrappedResponse,
     display: displayEffects
   };
 }

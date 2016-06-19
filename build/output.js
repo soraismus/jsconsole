@@ -415,6 +415,10 @@ function translateDisplay(promptLabel, displayEffects) {
 
 function translateSubmit(promptLabel, command) {
   var removals = [childByClass(promptClass, 0)];
+  var additions = [createPrompt(promptLabel)];
+  if (!command.response.effect) {
+    additions.unshift(createOldPromptReply(command.response.value));
+  }
   if (command.display.length >= magicNumber) {
     removals.push(
       childByClass(lineItemClass, 0),
@@ -440,11 +444,7 @@ function translateSubmit(promptLabel, command) {
         modify: [
           {
             child: childByClass(consoleClass, 0),
-            changes: { children: { add: [
-                createOldPromptReply(command.response),
-                createPrompt(promptLabel)
-              ]
-            }}
+            changes: { children: { add: additions }}
           }
         ]
       }
@@ -953,7 +953,9 @@ function submit(appState, transform) {
 
   var results = transform(text);
   var length = results.length;
-  var pureResult = results[length - 1].value;
+
+  var wrappedResponse = results[length - 1];
+
   var displayEffects = results
     .slice(0, length - 1)
     .filter(function (value) { return value.effect.type === 'display'; });
@@ -961,7 +963,7 @@ function submit(appState, transform) {
   return {
     commandType: 'submit',
     oldPrompt: text,
-    response: pureResult,
+    response: wrappedResponse,
     display: displayEffects
   };
 }
@@ -3454,7 +3456,9 @@ module.exports = parse;
 
 
 },{"./commentSignal":2,"./keyTokens":9,"./linked-list":10,"./mal-type-utilities":11}],16:[function(_dereq_,module,exports){
-var evaluate, interpret, process;
+var commentSignal, evaluate, interpret, process;
+
+commentSignal = _dereq_('./commentSignal');
 
 evaluate = _dereq_('./evaluate').evaluate;
 
@@ -3462,16 +3466,21 @@ interpret = _dereq_('./interpret');
 
 process = function(envs) {
   return function(sourceCode) {
-    var addResult, pureResult, results;
+    var addResult, result, results, value;
     results = [];
     addResult = function(result) {
       return results.push(result);
     };
-    pureResult = evaluate(envs, addResult)(interpret(sourceCode));
-    addResult({
+    value = evaluate(envs, addResult)(interpret(sourceCode));
+    result = value === commentSignal ? {
+      effect: {
+        type: 'comment'
+      }
+    } : {
       effect: false,
-      value: pureResult
-    });
+      value: value
+    };
+    addResult(result);
     return results;
   };
 };
@@ -3479,7 +3488,7 @@ process = function(envs) {
 module.exports = process;
 
 
-},{"./evaluate":5,"./interpret":7}],17:[function(_dereq_,module,exports){
+},{"./commentSignal":2,"./evaluate":5,"./interpret":7}],17:[function(_dereq_,module,exports){
 var adjoinMalValue, commentSignal, coreEffectfulFunctionLabel, corePureFunctionLabel, extractJsValue, ignoreLabel, indexEnd, indexStart, keywordLabel, listEnd, listStart, macroLabel, malAtom_question_, malCoreEffectfulFunction_question_, malCorePureFunction_question_, malIdentifier_question_, malIgnore_question_, malIndex_question_, malKeyword_question_, malList_question_, malMacro_question_, malNil_question_, malString_question_, malUserPureFunction_question_, nilLabel, reduce, serialize, serializeAtom, serializeIdentifier, serializeIndex, serializeList, serializeString, stripQuotes, userPureFunctionLabel,
   __hasProp = {}.hasOwnProperty;
 
