@@ -3,6 +3,7 @@ var appState = {
     past: [],
     future: [],
     cache: [],
+    entryCount: 0,
     display: [],
   },
   cursor: {

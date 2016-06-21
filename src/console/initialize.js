@@ -7,13 +7,14 @@ var modifyElement     = require('../domUtility/interpret').modifyElement;
 var translate         = require('./interpret2').translate;
 var translateDisplay  = require('./interpret2').translateDisplay;
 
-var a         =  97;
+var a =  97;
+var e = 101;
+var l = 108;
+
 var backspace =   8;
 var _delete   =  46;
 var down      =  40;
-var e         = 101;
 var enter     =  13;
-var l         = 108;
 var left      =  37;
 var right     =  39;
 var up        =  38;
@@ -63,12 +64,6 @@ function convertEventToCommand(event, transform) {
   }
 }
 
-function display(promptLabel, text) {
-  modifyElement(
-    document.getElementById('console'),
-    translateDisplay(promptLabel, text)[0]);
-}
-
 function handleEvent(promptLabel, transform) {
   return function (event) {
     var command = convertEventToCommand(event, transform);
@@ -93,7 +88,4 @@ function transformUi(promptLabel, command) {
   }
 }
 
-module.exports = {
-  display: display,
-  initialize: initialize
-};
+module.exports = initialize;

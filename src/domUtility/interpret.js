@@ -73,14 +73,13 @@ function modifyElement(node, config) {
           break;
         case 'remove':
           for (var index in config.children[op]) {
-            var child = findChild(node, config.children[op][index]);
-            child.parentNode.removeChild(child);
+            removeNode(findChild(node, config.children[op][index]));
           }
           break;
         case 'removeAll':
           var children = findChildren(node, config.children[op]);
           for (var index in children) {
-            children[index].parentNode.removeChild(children[index]);
+            removeNode(children[index]);
           }
           break;
         default:
@@ -191,6 +190,10 @@ function createAndAttachElement(parent, config) {
 
     parent.appendChild(node);
   }
+}
+
+function removeNode(node) {
+  node.parentNode.removeChild(node);
 }
 
 module.exports = {

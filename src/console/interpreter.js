@@ -138,19 +138,25 @@ function submit(appState, transform) {
   var text = __text.trim();
 
   var results = transform(text);
-  var length = results.length;
+  var lastIndex = results.length - 1;
 
-  var wrappedResponse = results[length - 1];
+  var wrappedResponse = results[lastIndex];
+
+  var responseCount = wrappedResponse.effect ? 0 : 2;
 
   var displayEffects = results
-    .slice(0, length - 1)
+    .slice(0, lastIndex)
     .filter(function (value) { return value.effect.type === 'display'; });
+
+  var newEntryCount = displayEffects.length + responseCount;
 
   return {
     commandType: 'submit',
     oldPrompt: text,
     response: wrappedResponse,
-    display: displayEffects
+    display: displayEffects,
+    entryCount: appState.history.entryCount + newEntryCount,
+    newEntryCount: newEntryCount
   };
 }
 

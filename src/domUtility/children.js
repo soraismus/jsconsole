@@ -1,5 +1,6 @@
 function identifyChild(mode) {
   return function(specifier, index) {
+    index = index == undefined ? 0 : index;
     var result = { mode: mode, key: { index: index }};
     result.key[mode] = specifier;
     return result;
@@ -7,7 +8,7 @@ function identifyChild(mode) {
 }
 
 function identifyChildren(mode) {
-  return function(specifier, index) {
+  return function(specifier) {
     var result = { mode: mode, key: {}};
     result.key[mode] = specifier;
     return result;

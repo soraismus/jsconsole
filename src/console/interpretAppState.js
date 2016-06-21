@@ -13,7 +13,16 @@ function interpretAppState(command) {
 
     case 'clearConsole':
       return function (appState) {
-        return appState;
+        return {
+          cursor : appState.cursor,
+          history: {
+            past: appState.history.past,
+            future: appState.history.future,
+            cache: appState.history.cache,
+            entryCount: 0,
+            display: []
+          }
+        };
       };
 
     case 'deleteLeftChar':
@@ -70,6 +79,7 @@ function interpretAppState(command) {
             past: pastCopy,
             future: futureCopy,
             cache: cacheCopy,
+            entryCount: appState.history.entryCount,
             display: appState.history.display
           }
         };
@@ -147,6 +157,7 @@ function interpretAppState(command) {
             past: pastCopy,
             future: appState.history.future,
             cache: [],
+            entryCount: appState.history.entryCount,
             display: appState.history.display
           }
         };
@@ -180,6 +191,7 @@ function interpretAppState(command) {
             past: pastCopy,
             future: futureCopy,
             cache: cacheCopy,
+            entryCount: appState.history.entryCount,
             display: appState.history.display
           }
         };
@@ -220,6 +232,7 @@ function interpretAppState(command) {
             past: pastCopy,
             future: [],
             cache: [],
+            entryCount: command.entryCount,
             display: displayCopy
           }
         };

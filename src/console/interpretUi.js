@@ -104,6 +104,8 @@ function interpretUi(command) {
         history: {
           submit: {
             display: command.display,
+            entryCount: command.entryCount,
+            newEntryCount: command.newEntryCount,
             oldPrompt: command.oldPrompt,
             response: command.response
           }

@@ -9,7 +9,7 @@ var childByClass         = childrenUtility.childByClass;
 var childByTag           = childrenUtility.childByTag;
 var childrenByClass      = childrenUtility.childrenByClass;
 
-var magicNumber = 11;
+var magicNumber = 23;
 
 var consoleClass              = 'jsconsole';
 var lineItemClass             = 'jsconsole-line-item';
@@ -19,52 +19,7 @@ var promptClass               = 'jsconsole-prompt';
 var promptTextClass           = 'jsconsole-prompt-text';
 var promptTextPostCursorClass = 'jsconsole-prompt-text-post-cursor';
 
-var firstSpanChild = childByTag('span', 0);
-
-function modifyOldPrompt(index, promptLabel, replacementText) {
-  return {
-    child: childByClass(oldPromptClass, index),
-    changes: {
-      children: {
-        modify: [
-          {
-            child: firstSpanChild,
-            changes: { text: { replace: promptLabel + replacementText + '\n' }}
-          }
-        ]
-      }
-    }
-  };
-};
-
-function modifyOldPromptResponse(index, replacementText) {
-  return {
-    child: childByClass(oldPromptResponseClass, index),
-    changes: {
-      children: {
-        modify: [
-          {
-            child: firstSpanChild,
-            changes: { text: { replace: '==> ' + replacementText + '\n' }}
-          }
-        ]
-      }
-    }
-  };
-};
-
-function interpret(appState, command) {
-  if (command.ui != null) {
-    modifyElement(
-      document.getElementById('console'),
-      command.ui);
-  }
-  if (command.appState != null && typeof(command.appState) === 'function') {
-    return command.appState(appState);
-  } else {
-    return appState;
-  }
-};
+var firstSpanChild = childByTag('span');
 
 function translate(promptLabel, command) {
   var cursorChanges = [];
@@ -105,7 +60,7 @@ function translateCursor(promptLabel, command) {
         changes.push({
           children: {
             modify: [{
-              child: childByClass(promptTextClass, 0),
+              child: childByClass(promptTextClass),
               changes: { text: command[innerKey] }
             }]
           }
@@ -115,7 +70,7 @@ function translateCursor(promptLabel, command) {
         changes.push({
           children: {
             modify: [{
-              child: childByClass(promptTextPostCursorClass, 0),
+              child: childByClass(promptTextPostCursorClass),
               changes: { text: command[innerKey] }
             }]
           }
@@ -129,16 +84,9 @@ function translateCursor(promptLabel, command) {
 }
 
 function translateHistory(promptLabel, command) {
-  for (var innerKey in command) {
-    switch (innerKey) {
-      case 'clearConsole':
-        return translateClearConsole();
-      case 'submit':
-        return translateSubmit(promptLabel, command.submit);
-    }
-  }
-  //return [];
-  return [{}, {}];
+  return command.submit
+    ? translateSubmit(promptLabel, command.submit)
+    : [{}, {}];
 }
 
 function translateClearConsole() {
@@ -150,7 +98,7 @@ function translateDisplay(promptLabel, displayEffects) {
     children: {
       modify: [
         {
-          child: childByClass(consoleClass, 0),
+          child: childByClass(consoleClass),
           changes: { children: { add:
             displayEffects.map(function (displayEffect) {
               return createDisplay(displayEffect.value);
@@ -163,15 +111,19 @@ function translateDisplay(promptLabel, displayEffects) {
 }
 
 function translateSubmit(promptLabel, command) {
-  var removals = [childByClass(promptClass, 0)];
+  var removals = [childByClass(promptClass)];
+  if (command.entryCount >= magicNumber) {
+    var count = command.entryCount - command.newEntryCount > magicNumber
+      ? command.newEntryCount
+      : command.entryCount - magicNumber;
+    for (var i = 0; i < count; i++) {
+      removals.push(
+        childByClass(lineItemClass));
+    }
+  }
   var additions = [createPrompt(promptLabel)];
   if (!command.response.effect) {
     additions.unshift(createOldPromptReply(command.response.value));
-  }
-  if (command.display.length >= magicNumber) {
-    removals.push(
-      childByClass(lineItemClass, 0),
-      childByClass(lineItemClass, 0));
   }
   return [
     {
@@ -179,7 +131,7 @@ function translateSubmit(promptLabel, command) {
         remove: removals,
         modify: [
           {
-            child: childByClass(consoleClass, 0),
+            child: childByClass(consoleClass),
             changes: { children: { add: [
                 createOldPrompt(promptLabel + command.oldPrompt)
               ]
@@ -192,7 +144,7 @@ function translateSubmit(promptLabel, command) {
       children: {
         modify: [
           {
-            child: childByClass(consoleClass, 0),
+            child: childByClass(consoleClass),
             changes: { children: { add: additions }}
           }
         ]
@@ -202,7 +154,6 @@ function translateSubmit(promptLabel, command) {
 }
 
 module.exports = {
-  interpret: interpret,
   translate: translate,
   translateDisplay: translateDisplay
 };
