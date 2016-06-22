@@ -1,11 +1,13 @@
 var components             = require('./components');
-var domUtility             = require('../domUtility/interpret');
-var createAndAttachElement = domUtility.createAndAttachElement;
-var DIV                    = require('../domUtility/elements').DIV;
-var PRE                    = require('../domUtility/elements').PRE;
+var interpreter            = require('../lib/interpreter');
+var createAndAttachElement = interpreter.createAndAttachElement;
+var modifyElement          = interpreter.modifyElement;
+var elements               = require('../lib/elements');
+var DIV                    = elements.DIV;
+var PRE                    = elements.PRE;
 
 function initializeUi(promptLabel) {
-  domUtility.createAndAttachElement(
+  createAndAttachElement(
     document.getElementById('console'),
     DIV(
       {

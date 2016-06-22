@@ -1,13 +1,14 @@
-var modifyElement        = require('../domUtility/interpret').modifyElement;
+var interpreter          = require('../lib/interpreter');
+var modifyElement        = interpreter.modifyElement;
 var components           = require('./components');
 var createDisplay        = components.createDisplay;
 var createOldPrompt      = components.createOldPrompt;
 var createOldPromptReply = components.createOldPromptReply;
 var createPrompt         = components.createPrompt;
-var childrenUtility      = require('../domUtility/children');
-var childByClass         = childrenUtility.childByClass;
-var childByTag           = childrenUtility.childByTag;
-var childrenByClass      = childrenUtility.childrenByClass;
+var children             = require('../lib/children');
+var childByClass         = children.childByClass;
+var childByTag           = children.childByTag;
+var childrenByClass      = children.childrenByClass;
 
 var magicNumber = 23;
 

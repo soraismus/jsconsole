@@ -3,7 +3,7 @@ var initializeUi      = require('./initializeUi');
 var interpreter       = require('./interpreter');
 var interpretAppState = require('./interpretAppState');
 var interpretUi       = require('./interpretUi');
-var modifyElement     = require('../domUtility/interpret').modifyElement;
+var modifyElement     = require('../lib/interpreter').modifyElement;
 var translate         = require('./interpret2').translate;
 var translateDisplay  = require('./interpret2').translateDisplay;
 
