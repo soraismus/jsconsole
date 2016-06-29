@@ -100,23 +100,38 @@ function translateDisplay(promptLabel, displayEffects) {
       modify: [
         {
           child: childByClass(consoleClass),
-          changes: { children: { add:
-            displayEffects.map(function (displayEffect) {
-              return createDisplay(displayEffect.value);
-            })
-          }}
+          changes: {
+            children: {
+              add: procrustate(displayEffects).map(function (displayEffect) {
+                return createDisplay(displayEffect.value);
+              })
+            }
+          }
         }
       ]
     }
   }];
 }
 
+function procrustate(displayEffects) {
+  return displayEffects.length >= magicNumber - 1
+    ? displayEffects.slice(
+        displayEffects.length - magicNumber + 2,
+        displayEffects.length)
+    : displayEffects;
+}
+
 function translateSubmit(promptLabel, command) {
   var removals = [childByClass(promptClass)];
   if (command.entryCount >= magicNumber) {
-    var count = command.entryCount - command.newEntryCount > magicNumber
-      ? command.newEntryCount
-      : command.entryCount - magicNumber;
+    var count = Math.min(
+      command.entryCount,
+      //magicNumber - 1,
+      magicNumber,
+      command.entryCount - command.newEntryCount > magicNumber
+        ? command.newEntryCount
+        //: command.entryCount - magicNumber);
+        : command.entryCount - command.newEntryCount);
     for (var i = 0; i < count; i++) {
       removals.push(
         childByClass(lineItemClass));
