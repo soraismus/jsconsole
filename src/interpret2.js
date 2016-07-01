@@ -138,7 +138,7 @@ function translateSubmit(promptLabel, command) {
     }
   }
   var additions = [createPrompt(promptLabel)];
-  if (!command.response.effect) {
+  if (!command.response.effect || command.response.effect.type === 'error') {
     additions.unshift(createOldPromptReply(command.response.value));
   }
   return [

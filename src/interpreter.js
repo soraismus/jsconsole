@@ -142,7 +142,7 @@ function submit(appState, transform) {
 
   var wrappedResponse = results[lastIndex];
 
-  var responseCount = wrappedResponse.effect ? 0 : 2;
+  var responseCount = wrappedResponse.effect && wrappedResponse.effect.type !== 'error' ? 0 : 2;
 
   var displayEffects = results
     .slice(0, lastIndex)
