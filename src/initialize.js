@@ -20,8 +20,8 @@ var right     =  39;
 var up        =  38;
 
 function convertEventToCommand(event, transform) {
+  event.preventDefault();
   if (event.ctrlKey) {
-    event.preventDefault();
     switch (event.charCode) {
       case a:
         return interpreter.moveCursorToStart(appState);
@@ -33,29 +33,22 @@ function convertEventToCommand(event, transform) {
     return interpreter.noOp(appState);
   }
   if (event.altKey) {
-    event.preventDefault();
     return interpreter.noOp(appState);
   }
   switch (event.keyCode) {
     case enter:
       return interpreter.submit(appState, transform);
     case backspace:
-      event.preventDefault();
       return interpreter.deleteLeftChar(appState);
     case left:
-      event.preventDefault();
       return interpreter.moveCursorLeft(appState);
     case right:
-      event.preventDefault();
       return interpreter.moveCursorRight(appState);
     case up:
-      event.preventDefault();
       return interpreter.rewindHistory(appState);
     case down:
-      event.preventDefault();
       return interpreter.fastForwardHistory(appState);
     case _delete:
-      event.preventDefault();
       return interpreter.deleteRightChar(appState);
     default:
       return interpreter.addChar(

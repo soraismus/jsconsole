@@ -142,13 +142,24 @@ function submit(appState, transform) {
 
   var wrappedResponse = results[lastIndex];
 
-  var responseCount = wrappedResponse.effect && wrappedResponse.effect.type !== 'error' ? 0 : 2;
+  //var responseCount = wrappedResponse.effect && wrappedResponse.effect.type !== 'error' ? 0 : 2;
+  
+  if (!wrappedResponse.effect) {
+    var responseCount = 2;
+  } else if (wrappedResponse.effect.type === 'error') {
+    var responseCount = 2;
+  } else if (wrappedResponse.effect.type === 'comment') {
+    var responseCount = 1;
+  } else {
+    var responseCount = 0;
+  }
 
   var displayEffects = results
     .slice(0, lastIndex)
     .filter(function (value) { return value.effect.type === 'display'; });
 
   var newEntryCount = displayEffects.length + responseCount;
+  //var newEntryCount = displayEffects.length + 2;
 
   return {
     commandType: 'submit',
