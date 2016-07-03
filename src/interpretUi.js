@@ -17,10 +17,24 @@ function interpretUi(command) {
         }
       };
 
+    case 'deletePreCursor':
+      return {
+        cursor: {
+          pre: { erase: true }
+        }
+      };
+
     case 'deleteRightChar':
       return {
         cursor: {
           post: { slice: { start: 1 }}
+        }
+      };
+
+    case 'deleteWord':
+      return {
+        cursor: {
+          pre: { replace: command.innerText }
         }
       };
 

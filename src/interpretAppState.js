@@ -36,6 +36,17 @@ function interpretAppState(command) {
         };
       };
 
+    case 'deletePreCursor':
+      return function (appState) {
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: '',
+            post: appState.cursor.post
+          }
+        };
+      };
+
     case 'deleteRightChar':
       return function (appState) {
         return {
@@ -43,6 +54,17 @@ function interpretAppState(command) {
           cursor: {
             pre: appState.cursor.pre,
             post: appState.cursor.post.slice(1)
+          }
+        };
+      };
+
+    case 'deleteWord':
+      return function (appState) {
+        return {
+          history: appState.history, 
+          cursor: {
+            pre: command.innerText,
+            post: appState.cursor.post
           }
         };
       };

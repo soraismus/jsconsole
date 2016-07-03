@@ -14,11 +14,23 @@ function deleteLeftChar(appState) {
     : { commandType: 'deleteLeftChar', end: end, innerText: innerText };
 }
 
+function deletePreCursor(appState) {
+  return { commandType: 'deletePreCursor' };
+}
+
 function deleteRightChar(appState) {
   var innerText = appState.cursor.post;
   return innerText.length == 0
     ? noOp(appState)
     : { commandType: 'deleteRightChar' };
+}
+
+function deleteWord(appState) {
+  var innerText = appState.cursor.pre;
+  return {
+    commandType: 'deleteWord',
+    innerText: innerText.slice(0, innerText.slice(0, -1).lastIndexOf(' ') + 1)
+  };
 }
 
 function display(appState, text) {
@@ -175,7 +187,9 @@ var interpreter = {
   addChar: addChar,
   clearConsole: clearConsole,
   deleteLeftChar: deleteLeftChar,
+  deletePreCursor: deletePreCursor,
   deleteRightChar: deleteRightChar,
+  deleteWord: deleteWord,
   display: display,
   fastForwardHistory: fastForwardHistory,
   moveCursorLeft: moveCursorLeft,

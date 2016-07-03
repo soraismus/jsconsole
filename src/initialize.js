@@ -9,7 +9,10 @@ var translateDisplay  = require('./interpret2').translateDisplay;
 
 var a =  97;
 var e = 101;
+var h = 104;
 var l = 108;
+var u = 117;
+var w = 119;
 
 var backspace =   8;
 var _delete   =  46;
@@ -27,10 +30,17 @@ function convertEventToCommand(event, transform) {
         return interpreter.moveCursorToStart(appState);
       case e:
         return interpreter.moveCursorToEnd(appState);
+      case h:
+        return interpreter.deleteLeftChar(appState);
       case l:
         return interpreter.clearConsole(appState);
+      case u:
+        return interpreter.deletePreCursor(appState);
+      case w:
+        return interpreter.deleteWord(appState);
+      default:
+        return interpreter.noOp(appState);
     }
-    return interpreter.noOp(appState);
   }
   if (event.altKey) {
     return interpreter.noOp(appState);
