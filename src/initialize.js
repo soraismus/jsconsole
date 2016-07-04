@@ -1,9 +1,12 @@
+var abstractViewPort  = require('./abstractViewPort');
 var appState          = require('./appState');
+var browserViewPort   = require('./browserViewPort');
 var initializeUi      = require('./initializeUi');
 var interpreter       = require('./interpreter');
 var interpretAppState = require('./interpretAppState');
 var interpretUi       = require('./interpretUi');
 var modifyElement     = require('../lib/interpreter').modifyElement;
+var rerender          = require('./rerender');
 var translate         = require('./interpret2').translate;
 var translateDisplay  = require('./interpret2').translateDisplay;
 
@@ -22,7 +25,7 @@ var left      =  37;
 var right     =  39;
 var up        =  38;
 
-function convertEventToCommand(event, transform) {
+function getNextAbstractViewPort(event, transform) {
   event.preventDefault();
   if (event.ctrlKey) {
     switch (event.charCode) {
@@ -69,9 +72,18 @@ function convertEventToCommand(event, transform) {
 
 function handleEvent(promptLabel, transform) {
   return function (event) {
-    var command = convertEventToCommand(event, transform);
-    appState = interpretAppState(command)(appState);
-    transformUi(promptLabel, command);
+    newAbstractViewPort = getNextAbstractViewPort(event, transform);
+    newBrowserViewPort = createBrowserViwePort(
+      browserViewPort,
+      newAbstractViewPort,
+      abstractViewPort);
+    abstractViewPort = newAbstractViewPort;
+    browserViewPort = newBrowserViewPort;
+    rerender( 
+      document.getElementById('console'),
+      { promptLabel: promptLabel },
+      browserViewPort);
+    //transformUi(promptLabel, command);
   };
 }
 
@@ -82,6 +94,7 @@ function initialize(config) {
   document.addEventListener('keypress', handleEvent(promptLabel, transform));
 }
 
+/*
 function transformUi(promptLabel, command) {
   var changes = translate(promptLabel, interpretUi(command));
   for (var index in changes) {
@@ -89,6 +102,35 @@ function transformUi(promptLabel, command) {
       document.getElementById('console'),
       changes[index]);
   }
+}
+*/
+
+function createBrowserViwePort(
+    browserViewPort,
+    newAbstractViewPort,
+    origAbstractViewPort,
+    clearViewPort) {
+  if (!!clearViewPort) {
+    return {
+      displayItems: [],
+      prompt: newAbstractViewPort.prompt
+    };
+  }
+  var newEntries = newAbstractViewPort.timeline.entries;
+  var origEntries = origAbstractViewPort.timeline.entries;
+  var diffCount = newEntries.length - origEntries.length;
+  var newDisplayItems = diffCount === 0
+    ?  displayItems: browserViewPort
+        .displayItems
+        .slice(0, browserViewPort.maximumSize)
+    : displayItems: browserViewPort
+        .displayItems
+        .concat(newEntries.slice(0, diffCount).reverse())
+        .slice(0, browserViewPort.maximumSize);
+  return {
+    displayItems: newDisplayItems,
+    prompt: newAbstractViewPort.prompt
+  };
 }
 
 module.exports = initialize;

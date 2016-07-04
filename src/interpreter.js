@@ -1,185 +1,254 @@
-function addChar(appState, char) {
-  return { commandType: 'addChar', char: char };
+var isNothing = require('./option').isNothing;
+var nothing = require('./option').nothing;
+var something = require('./option').something;
+function extractCommand(prompt) {
+  return (prompt.preCursor + prompt.postCursor).trim();
 }
-
-function clearConsole(appState) {
-  return { commandType: 'clearConsole' };
-}
-
-function deleteLeftChar(appState) {
-  var innerText = appState.cursor.pre;
-  var end = innerText.length - 1;
-  return innerText.length === 0
-    ? noOp(appState)
-    : { commandType: 'deleteLeftChar', end: end, innerText: innerText };
-}
-
-function deletePreCursor(appState) {
-  return { commandType: 'deletePreCursor' };
-}
-
-function deleteRightChar(appState) {
-  var innerText = appState.cursor.post;
-  return innerText.length == 0
-    ? noOp(appState)
-    : { commandType: 'deleteRightChar' };
-}
-
-function deleteWord(appState) {
-  var innerText = appState.cursor.pre;
+function normalizePrompt(prompt) {
   return {
-    commandType: 'deleteWord',
-    innerText: innerText.slice(0, innerText.slice(0, -1).lastIndexOf(' ') + 1)
+    preCursor: extractCommand(prompt),
+    postCursor: ''
   };
 }
 
-function display(appState, text) {
-  return { commandType: 'display', text: text };
-}
-
-function fastForwardHistory(appState) {
-  if (appState.history.future.length <= 0 ) {
-    if (appState.history.cache.length > 0) {
-      var preCursorText = appState.cursor.pre;
-      var postCursorText = appState.cursor.post;
-      var cursorText = (preCursorText + postCursorText).trim();
-      return {
-        commandType: 'restoreCache',
-        cursorText: appState.history.cache[0],
-        historyEntry: cursorText
-      };
-    } else {
-      return noOp(appState);
+function addChar(abstractViewPort, char) {
+  return {
+    timeline: abstractViewPort.timeline, 
+    cursor: {
+      preCursor: abstractViewPort.cursor.preCursor + char,
+      postCursor: abstractViewPort.cursor.postCursor
     }
-  }
-
-  var preCursorText = appState.cursor.pre;
-  var postCursorText = appState.cursor.post;
-  var cursorText = (preCursorText + postCursorText).trim();
-
-  var length = appState.history.future.length;
-  var entry = appState.history.future[length - 1];
-
-  return {
-    commandType: 'fastForwardHistory',
-    cursorText: entry,
-    historyEntry: cursorText
   };
 }
 
-function moveCursorLeft(appState) {
-  var __promptText = appState.cursor.pre;
-  var __promptTextPost = appState.cursor.post;
-  var index = __promptText.length - 1;
-  var command = __promptText.length === 0
-    ? noOp(appState)
-    : {
-        commandType: 'moveCursorLeft',
-        index: index,
-        __promptText: __promptText
-      };
-  return command;
+function clearConsole(abstractViewPort) {
+  return abstractViewPort;
 }
 
-function moveCursorRight(appState) {
-  var __promptText = appState.cursor.pre;
-  var __promptTextPost = appState.cursor.post;
-  var length = __promptTextPost.length;
-  return length === 0
-    ? noOp(appState)
-    : {
-        commandType: 'moveCursorRight',
-        length: length,
-        __promptTextPost: __promptTextPost
-      };
-}
-
-function moveCursorToEnd(appState) {
-  var __promptText = appState.cursor.pre;
-  var __promptTextPost = appState.cursor.post;
+function deleteLeftChar(abstractViewPort) {
   return {
-      commandType: 'moveCursorToEnd',
-      __promptText: __promptText,
-      __promptTextPost: __promptTextPost
-    };
-}
-
-function moveCursorToStart(appState) {
-  var __promptText = appState.cursor.pre;
-  var __promptTextPost = appState.cursor.post;
-  return {
-      commandType: 'moveCursorToStart',
-      __promptText: __promptText,
-      __promptTextPost: __promptTextPost
-    };
-}
-
-function noOp(appState) {
-  return { commandType: 'noOp' };
-}
-
-function rewindHistory(appState) {
-  if (appState.history.past.length <= 0) {
-    return noOp(appState);
-  }
-
-  var preCursorText = appState.cursor.pre;
-  var postCursorText = appState.cursor.post;
-  var cursorText = (preCursorText + postCursorText).trim();
-
-  var length = appState.history.past.length;
-  var entry = appState.history.past[length - 1];
-
-  return {
-    commandType: 'rewindHistory',
-    cursorText: entry,
-    historyEntry: cursorText
+    timeline: abstractViewPort.timeline, 
+    cursor: {
+      preCursor: abstractViewPort.cursor.preCursor.slice(0, -1),
+      postCursor: abstractViewPort.cursor.postCursor
+    }
   };
 }
 
-function submit(appState, transform) {
+function deletePreCursor(abstractViewPort) {
+  return {
+    timeline: abstractViewPort.timeline, 
+    cursor: {
+      preCursor: '',
+      postCursor: abstractViewPort.cursor.postCursor
+    }
+  };
+}
+
+function deleteRightChar(abstractViewPort) {
+  return {
+    timeline: abstractViewPort.timeline, 
+    cursor: {
+      preCursor: abstractViewPort.cursor.preCursor,
+      postCursor: abstractViewPort.cursor.postCursor.slice(1)
+    }
+  };
+}
+
+function deleteWord(abstractViewPort) {
+  var preCursor = abstractViewPort.cursor.preCursor;
+  return {
+    timeline: abstractViewPort.timeline, 
+    cursor: {
+      preCursor: preCursor.slice(
+        0,
+        preCursor.slice(0, -1).lastIndexOf(' ') + 1),
+      postCursor: abstractViewPort.cursor.postCursor
+    }
+  };
+}
+
+// fastForwardCommandHistory
+function fastForwardHistory(abstractViewPort) {
+  var newCachedPromptMaybe, newPast, newPrompt;
+
+  var timeline = abstractViewPort.timeline;
+  var promptTimeline = timeline.prompts;
+  var future = promptTimeline.future;
+
+  if (future.length <= 0 && isNothing(cachedPromptMaybe)) {
+    return abstractViewPort;
+  }
+
+  var past = promptTimeline.past;
+  var newFuture = future.slice(1);
+
+  if (future.length <= 0) {
+    newPrompt = newCachedPromptMaybe.value;
+    newCachedPromptMaybe = nothing();
+    newPast = past;
+  } else {
+    newPrompt = future[0];
+    newCachedPromptMaybe = timeline.cachedPromptMaybe;
+    newPast = [normalizePrompt(abstractViewPort.prompt)].concat(past);
+  }
+
+  return {
+    prompt: newPrompt,
+    timeline: {
+      cachedPromptMaybe: newCachedPromptMaybe,
+      entries: abstractViewPort.timeline.entries,
+      prompts: {
+        past: newPast,
+        future: newFuture
+      }
+    }
+  };
+}
+
+function moveCursorLeft(abstractViewPort) {
+  var preCursor = abstractViewPort.prompt.preCursor;
+  var preCursorLength = preCursor.length;
+  if (preCursorLength === 0) {
+    return abstractViewPort;
+  } else {
+    var postCursor = abstractViewPort.prompt.postCursor;
+    return {
+      timeline: abstractViewPort.timeline,
+      prompt: {
+        preCursor: preCursor.slice(0, -1),
+        postCursor: preCursor[preCursorLength - 1] + postCursor
+      }
+    };
+  }
+}
+
+function moveCursorRight(abstractViewPort) {
+  var postCursor = abstractViewPort.prompt.postCursor;
+  if (postCursor.length === 0) {
+    return abstractViewPort;
+  } else {
+    var preCursor = abstractViewPort.prompt.preCursor;
+    return {
+      timeline: abstractViewPort.timeline,
+      prompt: {
+        preCursor: preCursor + postCursor[0],
+        postCursor: postCursor.slice(1)
+      }
+    };
+  }
+}
+
+function moveCursorToEnd(abstractViewPort) {
+  var prompt = abstractViewPort.prompt;
+  return {
+    timeline: abstractViewPort.timeline,
+    prompt: {
+      preCursor: prompt.preCursor + prompt.postCursor,
+      postCursor: ''
+    }
+  };
+}
+
+function moveCursorToStart(abstractViewPort) {
+  var prompt = abstractViewPort.prompt;
+  return {
+    timeline: abstractViewPort.timeline,
+    prompt: {
+      preCursor: '',
+      postCursor: prompt.preCursor + prompt.postCursor,
+    }
+  };
+}
+
+// Necessary?
+function noOp(abstractViewPort) {
+  return abstractViewPort;
+}
+
+// rewindCommandHistory
+function rewindHistory(abstractViewPort) {
+  var newCachedPromptMaybe, newFuture;
+
+  var timeline = abstractViewPort.timeline;
+  var promptTimeline = timeline.prompts;
+  var past = promptTimeline.past;
+
+  if (past.length <= 0) {
+    return abstractViewPort;
+  }
+
+  var future = promptTimeline.future;
+  var newPrompt = past[0];
+  var newPast = past.slice(1);
+
+  if (isNothing(newCachedPromptMaybe)) {
+    newCachedPromptMaybe = something(abstractViewPort.prompt);
+    newFuture = future;
+  } else {
+    newCachedPromptMaybe = timeline.cachedPromptMaybe;
+    newFuture = [normalizePrompt(abstractViewPort.prompt)].concat(future);
+  }
+
+  return {
+    prompt: newPrompt,
+    timeline: {
+      cachedPromptMaybe: newCachedPromptMaybe,
+      entries: abstractViewPort.timeline.entries,
+      prompts: {
+        past: newPast,
+        future: newFuture
+      }
+    }
+  };
+}
+
+// NOTE: `submit` will be more comman than `rewind` or `fastforward`,
+// so perhaps past prompts and entries shouldn't be reversed.
+function submit(abstractViewPort, transform) {
+  var newCachedPromptMaybe, newFuture;
+
   if (transform == null) {
     transform = function (value) {
-      return value;
+      var results;
+      // TODO: [{ type: 'display'/'pure',etc., value: value }]
+      return (results = [{ effect: false, value: value }]);
     };
   }
 
-  var __promptText = appState.cursor.pre;
-  var __promptTextPost = appState.cursor.post;
-  var __text = __promptText + __promptTextPost;
-  var text = __text.trim();
+  // enum Entry { command, completion, display, error, response }
 
-  var results = transform(text);
-  var lastIndex = results.length - 1;
-
-  var wrappedResponse = results[lastIndex];
-
-  //var responseCount = wrappedResponse.effect && wrappedResponse.effect.type !== 'error' ? 0 : 2;
-  
-  if (!wrappedResponse.effect) {
-    var responseCount = 2;
-  } else if (wrappedResponse.effect.type === 'error') {
-    var responseCount = 2;
-  } else if (wrappedResponse.effect.type === 'comment') {
-    var responseCount = 1;
-  } else {
-    var responseCount = 0;
-  }
-
-  var displayEffects = results
-    .slice(0, lastIndex)
-    .filter(function (value) { return value.effect.type === 'display'; });
-
-  var newEntryCount = displayEffects.length + responseCount;
-  //var newEntryCount = displayEffects.length + 2;
+  var commandText = extractCommand(abstractViewPort.prompt);
+  var results = transform(commandText);
+  var displayEntries = results
+    .slice(0, -1)
+    .filter(function (result) { return result.effect.type === 'display'; })
+    .map(function (display) { return { type: 'display', value: display.value }});
+  var response = { type: 'response', value: results[results.length - 1].value };
+  var command = { type: 'command', value: commandText };
 
   return {
-    commandType: 'submit',
-    oldPrompt: text,
-    response: wrappedResponse,
-    display: displayEffects,
-    entryCount: appState.history.entryCount + newEntryCount,
-    newEntryCount: newEntryCount
+    timeline: {
+      cachedPromptMaybe: nothing(),
+      entries: {
+        past: [response].concat(
+          displayEntries.reverse(),
+          [command],
+          abstractViewPort.timeline.entries.future.reverse(),
+          abstractViewPort.timeline.entries.past),
+        future: []
+      },
+      prompts: {
+        past: [normalizePrompt(abstractViewPort.prompt)].concat(
+          abstractViewPort.timeline.prompts.future.reverse(),
+          abstractViewPort.timeline.prompts.past);
+        future: []
+      }
+    },
+    prompt: {
+      preCursor: '',
+      postCursor: ''
+    }
   };
 }
 
@@ -190,7 +259,6 @@ var interpreter = {
   deletePreCursor: deletePreCursor,
   deleteRightChar: deleteRightChar,
   deleteWord: deleteWord,
-  display: display,
   fastForwardHistory: fastForwardHistory,
   moveCursorLeft: moveCursorLeft,
   moveCursorRight: moveCursorRight,
