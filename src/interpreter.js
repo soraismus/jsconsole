@@ -46,7 +46,7 @@ function completeWord(abstractViewPort, getCandidates) {
     return {
       timeline: abstractViewPort.timeline,
       prompt: {
-        preCursor: splitCommand[0] + candidates[0] + ' ' + abstractViewPort.prompt.postCursor,
+        preCursor: splitCommand[0] + candidates[0] + abstractViewPort.prompt.postCursor,
         postCursor: abstractViewPort.prompt.postCursor
       }
     };
@@ -154,9 +154,9 @@ function fastForwardHistory(abstractViewPort) {
 }
 
 function getPrefix(command) {
-  //var regex = /^(.*\W)(\w*)/;
-  var regex = /^(.*\W)([^\(\)\[\]]*)/;
+  var regex = /^(.*[\s\(\)\[\]])([^\(\)\[\]]*)/;
   var match = regex.exec(command);
+  console.log('match: ', match);
   return match == null
     ? ['', command]
     : [match[1], match[2]];
