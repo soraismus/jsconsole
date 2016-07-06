@@ -19,6 +19,7 @@ var enter     =  13;
 var left      =  37;
 var right     =  39;
 var up        =  38;
+var tab       =   9;
 
 function command(value) {
   return createVariant('command', value);
@@ -28,7 +29,7 @@ function viewPort(value) {
   return createVariant('viewPort', value);
 }
 
-function getNextAbstractViewPort(event, transform) {
+function getNextAbstractViewPort(event, transform, getCandidates) {
   event.preventDefault();
   if (event.ctrlKey) {
     switch (event.charCode) {
@@ -66,6 +67,11 @@ function getNextAbstractViewPort(event, transform) {
       return viewPort(interpreter.fastForwardHistory(abstractViewPort));
     case _delete:
       return viewPort(interpreter.deleteRightChar(abstractViewPort));
+    case tab:
+      return viewPort(
+        interpreter.completeWord(
+          abstractViewPort,
+          getCandidates));
     default:
       return viewPort(interpreter.addChar(
         abstractViewPort,
@@ -73,9 +79,9 @@ function getNextAbstractViewPort(event, transform) {
   }
 }
 
-function handleEvent(promptLabel, transform) {
+function handleEvent(promptLabel, transform, getCandidates) {
   return function (event) {
-    viewPortOrCommand = getNextAbstractViewPort(event, transform);
+    viewPortOrCommand = getNextAbstractViewPort(event, transform, getCandidates);
     newTerminal = createBrowserViewPort(
       browserViewPort,
       viewPortOrCommand,
@@ -93,10 +99,11 @@ function handleEvent(promptLabel, transform) {
 }
 
 function initialize(config) {
-  var promptLabel = config.promptLabel;
-  var transform   = config.transform;
+  var promptLabel   = config.promptLabel;
+  var transform     = config.transform;
+  var getCandidates = config.getCandidates;
   initializeUi(promptLabel);
-  document.addEventListener('keypress', handleEvent(promptLabel, transform));
+  document.addEventListener('keypress', handleEvent(promptLabel, transform, getCandidates));
 }
 
 function createBrowserViewPort(terminal, viewPortOrCommand, prevViewPort) {

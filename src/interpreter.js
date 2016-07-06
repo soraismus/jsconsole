@@ -25,6 +25,53 @@ function clearConsole(abstractViewPort) {
   return abstractViewPort;
 }
 
+function completeWord(abstractViewPort, getCandidates) {
+  var newCachedPromptMaybe, newFuture;
+
+  if (getCandidates == null) {
+    getCandidates = function (value) {
+      var results;
+      return (results = [{ effect: false, value: value }]);
+    };
+  }
+
+  var commandText = abstractViewPort.prompt.preCursor;
+  var splitCommand = getPrefix(commandText);
+  var candidates = getCandidates(splitCommand[1]);
+  console.log(candidates);
+
+  if (candidates.length === 0) {
+    return abstractViewPort;
+  } else if (candidates.length === 1) {
+    return {
+      timeline: abstractViewPort.timeline,
+      prompt: {
+        preCursor: splitCommand[0] + candidates[0] + ' ' + abstractViewPort.prompt.postCursor,
+        postCursor: abstractViewPort.prompt.postCursor
+      }
+    };
+  } else {
+    return {
+      timeline: {
+        cachedPromptMaybe: abstractViewPort.timeline.cachedPromptMaybe,
+        entries: {
+          past: [{ type: 'completion', value: candidates.join(' ') }].concat(
+            [{ type: 'command', value: extractCommand(abstractViewPort.prompt) }],
+            abstractViewPort.timeline.entries.future.reverse(),
+            abstractViewPort.timeline.entries.past),
+          future: []
+        },
+        prompts: {
+          past: abstractViewPort.timeline.prompts.future.reverse().concat(
+            abstractViewPort.timeline.prompts.past),
+          future: []
+        }
+      },
+      prompt: abstractViewPort.prompt
+    };
+  }
+}
+
 function deleteLeftChar(abstractViewPort) {
   return {
     timeline: abstractViewPort.timeline, 
@@ -104,6 +151,15 @@ function fastForwardHistory(abstractViewPort) {
       }
     }
   };
+}
+
+function getPrefix(command) {
+  //var regex = /^(.*\W)(\w*)/;
+  var regex = /^(.*\W)([^\(\)\[\]]*)/;
+  var match = regex.exec(command);
+  return match == null
+    ? ['', command]
+    : [match[1], match[2]];
 }
 
 function moveCursorLeft(abstractViewPort) {
@@ -256,6 +312,7 @@ function submit(abstractViewPort, transform) {
 var interpreter = {
   addChar: addChar,
   clearConsole: clearConsole,
+  completeWord: completeWord,
   deleteLeftChar: deleteLeftChar,
   deletePreCursor: deletePreCursor,
   deleteRightChar: deleteRightChar,
