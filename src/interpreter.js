@@ -14,9 +14,9 @@ function normalizePrompt(prompt) {
 function addChar(abstractViewPort, char) {
   return {
     timeline: abstractViewPort.timeline, 
-    cursor: {
-      preCursor: abstractViewPort.cursor.preCursor + char,
-      postCursor: abstractViewPort.cursor.postCursor
+    prompt: {
+      preCursor: abstractViewPort.prompt.preCursor + char,
+      postCursor: abstractViewPort.prompt.postCursor
     }
   };
 }
@@ -28,9 +28,9 @@ function clearConsole(abstractViewPort) {
 function deleteLeftChar(abstractViewPort) {
   return {
     timeline: abstractViewPort.timeline, 
-    cursor: {
-      preCursor: abstractViewPort.cursor.preCursor.slice(0, -1),
-      postCursor: abstractViewPort.cursor.postCursor
+    prompt: {
+      preCursor: abstractViewPort.prompt.preCursor.slice(0, -1),
+      postCursor: abstractViewPort.prompt.postCursor
     }
   };
 }
@@ -38,9 +38,9 @@ function deleteLeftChar(abstractViewPort) {
 function deletePreCursor(abstractViewPort) {
   return {
     timeline: abstractViewPort.timeline, 
-    cursor: {
+    prompt: {
       preCursor: '',
-      postCursor: abstractViewPort.cursor.postCursor
+      postCursor: abstractViewPort.prompt.postCursor
     }
   };
 }
@@ -48,22 +48,22 @@ function deletePreCursor(abstractViewPort) {
 function deleteRightChar(abstractViewPort) {
   return {
     timeline: abstractViewPort.timeline, 
-    cursor: {
-      preCursor: abstractViewPort.cursor.preCursor,
-      postCursor: abstractViewPort.cursor.postCursor.slice(1)
+    prompt: {
+      preCursor: abstractViewPort.prompt.preCursor,
+      postCursor: abstractViewPort.prompt.postCursor.slice(1)
     }
   };
 }
 
 function deleteWord(abstractViewPort) {
-  var preCursor = abstractViewPort.cursor.preCursor;
+  var preCursor = abstractViewPort.prompt.preCursor;
   return {
     timeline: abstractViewPort.timeline, 
-    cursor: {
+    prompt: {
       preCursor: preCursor.slice(
         0,
         preCursor.slice(0, -1).lastIndexOf(' ') + 1),
-      postCursor: abstractViewPort.cursor.postCursor
+      postCursor: abstractViewPort.prompt.postCursor
     }
   };
 }
@@ -73,6 +73,7 @@ function fastForwardHistory(abstractViewPort) {
   var newCachedPromptMaybe, newPast, newPrompt;
 
   var timeline = abstractViewPort.timeline;
+  var cachedPromptMaybe = timeline.cachedPromptMaybe;
   var promptTimeline = timeline.prompts;
   var future = promptTimeline.future;
 
@@ -80,17 +81,16 @@ function fastForwardHistory(abstractViewPort) {
     return abstractViewPort;
   }
 
-  var past = promptTimeline.past;
   var newFuture = future.slice(1);
+  var newPast = [normalizePrompt(abstractViewPort.prompt)].concat(
+    promptTimeline.past);
 
   if (future.length <= 0) {
-    newPrompt = newCachedPromptMaybe.value;
+    newPrompt = cachedPromptMaybe.value;
     newCachedPromptMaybe = nothing();
-    newPast = past;
   } else {
     newPrompt = future[0];
-    newCachedPromptMaybe = timeline.cachedPromptMaybe;
-    newPast = [normalizePrompt(abstractViewPort.prompt)].concat(past);
+    newCachedPromptMaybe = cachedPromptMaybe;
   }
 
   return {
@@ -171,6 +171,7 @@ function rewindHistory(abstractViewPort) {
   var newCachedPromptMaybe, newFuture;
 
   var timeline = abstractViewPort.timeline;
+  var cachedPromptMaybe = timeline.cachedPromptMaybe;
   var promptTimeline = timeline.prompts;
   var past = promptTimeline.past;
 
@@ -182,11 +183,11 @@ function rewindHistory(abstractViewPort) {
   var newPrompt = past[0];
   var newPast = past.slice(1);
 
-  if (isNothing(newCachedPromptMaybe)) {
+  if (isNothing(cachedPromptMaybe)) {
     newCachedPromptMaybe = something(abstractViewPort.prompt);
     newFuture = future;
   } else {
-    newCachedPromptMaybe = timeline.cachedPromptMaybe;
+    newCachedPromptMaybe = cachedPromptMaybe;
     newFuture = [normalizePrompt(abstractViewPort.prompt)].concat(future);
   }
 
@@ -241,7 +242,7 @@ function submit(abstractViewPort, transform) {
       prompts: {
         past: [normalizePrompt(abstractViewPort.prompt)].concat(
           abstractViewPort.timeline.prompts.future.reverse(),
-          abstractViewPort.timeline.prompts.past);
+          abstractViewPort.timeline.prompts.past),
         future: []
       }
     },

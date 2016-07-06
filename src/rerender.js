@@ -38,25 +38,30 @@ function rerender(node, prefixes, browserViewPort) {
           }
         },
         components.header,
-        browserViewPort.viewItems.map(renderComponent),
-        components.createPrompt(promptLabel))));
+        browserViewPort.displayItems.map(renderComponent.bind(null, prefixes)),
+        components.createPrompt(
+          promptLabel,
+          browserViewPort.prompt.preCursor,
+          browserViewPort.prompt.postCursor))));
+        /* + CURSOR + browserViewPort.prompt.postCursor */
 }
 
-function renderComponent(component) {
+function renderComponent(prefixes, component) {
+  var promptLabel = prefixes.promptLabel;
   switch (component.type) {
     case 'command':
-      return components.creatOldPrompt('...> ' + component.value);
+      return components.createOldPrompt(promptLabel + component.value);
     case 'response':
-      return components.creatOldPromptReply(component.value);
+      return components.createOldPromptReply(component.value);
     case 'display':
-      return components.creatOldPrompt(component.value);
+      return components.createOldPrompt(component.value);
     case 'completion':
-      return components.creatOldPrompt('  ' + component.value);
+      return components.createOldPrompt('  ' + component.value);
     case 'error':
-      return components.creatOldPrompt('...> ' + component.value);
+      return components.createOldPrompt('...> ' + component.value);
     default:
       throw new Error('invalid component type');
   }
 }
 
-module.exports = render;
+module.exports = rerender;

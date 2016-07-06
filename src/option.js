@@ -6,7 +6,7 @@ function bind(option, fn) {
 
 function _case(option, fn0, fn1) {
   return option === _nothing
-    ? fn1();
+    ? fn1()
     : fn0(option.value)
 }
 
@@ -28,15 +28,16 @@ function Option(value) {
   Object.defineProperty(
     this,
     'value',
-    get: function () {
-      if (value === guard) {
-        throw new Error(
-          'The value `nothing` does not encapsulate or represent any inner value.');
-      } else {
-        return value;
-      }
-    });
-}
+    {
+      get: function () {
+        if (value === guard) {
+          throw new Error(
+            'The value `nothing` does not encapsulate or represent any inner value.');
+        } else {
+          return value;
+        }
+    }});
+  }
 
 function something(value) {
   return new Option(value);

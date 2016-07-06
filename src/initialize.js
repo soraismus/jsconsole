@@ -1,14 +1,9 @@
 var abstractViewPort  = require('./abstractViewPort');
-var appState          = require('./appState');
 var browserViewPort   = require('./browserViewPort');
 var initializeUi      = require('./initializeUi');
 var interpreter       = require('./interpreter');
-var interpretAppState = require('./interpretAppState');
-var interpretUi       = require('./interpretUi');
-var modifyElement     = require('../lib/interpreter').modifyElement;
 var rerender          = require('./rerender');
-var translate         = require('./interpret2').translate;
-var translateDisplay  = require('./interpret2').translateDisplay;
+var createVariant     = require('./variant').create;
 
 var a =  97;
 var e = 101;
@@ -25,65 +20,75 @@ var left      =  37;
 var right     =  39;
 var up        =  38;
 
+function command(value) {
+  return createVariant('command', value);
+}
+
+function viewPort(value) {
+  return createVariant('viewPort', value);
+}
+
 function getNextAbstractViewPort(event, transform) {
   event.preventDefault();
   if (event.ctrlKey) {
     switch (event.charCode) {
       case a:
-        return interpreter.moveCursorToStart(appState);
+        return viewPort(interpreter.moveCursorToStart(abstractViewPort));
       case e:
-        return interpreter.moveCursorToEnd(appState);
+        return viewPort(interpreter.moveCursorToEnd(abstractViewPort));
       case h:
-        return interpreter.deleteLeftChar(appState);
+        return viewPort(interpreter.deleteLeftChar(abstractViewPort));
       case l:
-        return interpreter.clearConsole(appState);
+        return command({ command: 'clearConsole' });
       case u:
-        return interpreter.deletePreCursor(appState);
+        return viewPort(interpreter.deletePreCursor(abstractViewPort));
       case w:
-        return interpreter.deleteWord(appState);
+        return viewPort(interpreter.deleteWord(abstractViewPort));
       default:
-        return interpreter.noOp(appState);
+        return viewPort(interpreter.noOp(abstractViewPort));
     }
   }
   if (event.altKey) {
-    return interpreter.noOp(appState);
+    return viewPort(interpreter.noOp(abstractViewPort));
   }
   switch (event.keyCode) {
     case enter:
-      return interpreter.submit(appState, transform);
+      return viewPort(interpreter.submit(abstractViewPort, transform));
     case backspace:
-      return interpreter.deleteLeftChar(appState);
+      return viewPort(interpreter.deleteLeftChar(abstractViewPort));
     case left:
-      return interpreter.moveCursorLeft(appState);
+      return viewPort(interpreter.moveCursorLeft(abstractViewPort));
     case right:
-      return interpreter.moveCursorRight(appState);
+      return viewPort(interpreter.moveCursorRight(abstractViewPort));
     case up:
-      return interpreter.rewindHistory(appState);
+      return viewPort(interpreter.rewindHistory(abstractViewPort));
     case down:
-      return interpreter.fastForwardHistory(appState);
+      return viewPort(interpreter.fastForwardHistory(abstractViewPort));
     case _delete:
-      return interpreter.deleteRightChar(appState);
+      return viewPort(interpreter.deleteRightChar(abstractViewPort));
     default:
-      return interpreter.addChar(
-        appState,
-        String.fromCharCode(event.charCode));
+      return viewPort(interpreter.addChar(
+        abstractViewPort,
+        String.fromCharCode(event.charCode)));
   }
 }
 
 function handleEvent(promptLabel, transform) {
   return function (event) {
-    newAbstractViewPort = getNextAbstractViewPort(event, transform);
-    newBrowserViewPort = createBrowserViwePort(
+    viewPortOrCommand = getNextAbstractViewPort(event, transform);
+    newTerminal = createBrowserViewPort(
       browserViewPort,
-      newAbstractViewPort,
+      viewPortOrCommand,
       abstractViewPort);
-    abstractViewPort = newAbstractViewPort;
-    browserViewPort = newBrowserViewPort;
+    abstractViewPort = viewPortOrCommand.case({
+      command: function () { return abstractViewPort; },
+      viewPort: function (viewPort) { return viewPort; }
+    });
+    browserViewPort = newTerminal;
     rerender( 
       document.getElementById('console'),
       { promptLabel: promptLabel },
       browserViewPort);
-    //transformUi(promptLabel, command);
   };
 }
 
@@ -94,43 +99,35 @@ function initialize(config) {
   document.addEventListener('keypress', handleEvent(promptLabel, transform));
 }
 
-/*
-function transformUi(promptLabel, command) {
-  var changes = translate(promptLabel, interpretUi(command));
-  for (var index in changes) {
-    modifyElement(
-      document.getElementById('console'),
-      changes[index]);
-  }
-}
-*/
-
-function createBrowserViwePort(
-    browserViewPort,
-    newAbstractViewPort,
-    origAbstractViewPort,
-    clearViewPort) {
-  if (!!clearViewPort) {
-    return {
-      displayItems: [],
-      prompt: newAbstractViewPort.prompt
-    };
-  }
-  var newEntries = newAbstractViewPort.timeline.entries;
-  var origEntries = origAbstractViewPort.timeline.entries;
-  var diffCount = newEntries.length - origEntries.length;
-  var newDisplayItems = diffCount === 0
-    ?  displayItems: browserViewPort
-        .displayItems
-        .slice(0, browserViewPort.maximumSize)
-    : displayItems: browserViewPort
-        .displayItems
-        .concat(newEntries.slice(0, diffCount).reverse())
-        .slice(0, browserViewPort.maximumSize);
-  return {
-    displayItems: newDisplayItems,
-    prompt: newAbstractViewPort.prompt
-  };
+function createBrowserViewPort(terminal, viewPortOrCommand, prevViewPort) {
+  return viewPortOrCommand.case({
+    command: function () {
+      return {
+        displayItems: [],
+        maximumSize: terminal.maximumSize,
+        prompt: prevViewPort.prompt
+      };
+    },
+    viewPort: function (newViewPort) {
+      var maximumSize = terminal.maximumSize;
+      var newEntries = newViewPort.timeline.entries.past;
+      var prevEntries = prevViewPort.timeline.entries.past;
+      var diffCount = newEntries.length - prevEntries.length;
+      var newDisplayItems = (diffCount === 0)
+        ?  terminal
+            .displayItems
+            .slice(0, maximumSize)
+        : terminal
+            .displayItems
+            .concat(newEntries.slice(0, diffCount).reverse())
+            .slice(0, maximumSize);
+      return {
+        displayItems: newDisplayItems,
+        maximumSize: maximumSize,
+        prompt: newViewPort.prompt
+      };
+    }
+  });
 }
 
 module.exports = initialize;

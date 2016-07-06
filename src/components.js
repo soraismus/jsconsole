@@ -46,16 +46,23 @@ function createOldPromptReply(text) {
     SPAN(null, '==> ' + text + '\n'));
 }
 
-function createPrompt(promptLabel) {
+function createPrompt(promptLabel, preCursor, postCursor) {
+  preCursor = preCursor != null ? preCursor : '';
+  postCursor = postCursor != null ? postCursor : '';
   return SPAN(
     { classes: _prompt, style: { 'color': '#0d0' }},
     emptySpan,
     SPAN(
       null,
       SPAN(null, promptLabel),
-      SPAN({ classes: promptText }),
+      SPAN({ classes: promptText }, preCursor),
       cursor,
-      relativeSpan),
+      SPAN(
+        {
+          classes: promptTextPostCursor,
+          style: { 'position': 'relative' }
+        },
+        postCursor)),
     emptySpan);
 }
 
@@ -78,7 +85,7 @@ var header = SPAN(
     { classes: _header },
     SPAN({ style: { 'color': '#0ff' }}, 'Welcome to MHLisp Console!\n'));
 
-var relativeSpan = SPAN({
+var postCursor = SPAN({
   classes: promptTextPostCursor,
   style: { 'position': 'relative' }
 });
