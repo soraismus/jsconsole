@@ -114,13 +114,11 @@ function createBrowserViewPort(terminal, viewPortOrCommand, prevViewPort) {
       var prevEntries = prevViewPort.timeline.entries.past;
       var diffCount = newEntries.length - prevEntries.length;
       var newDisplayItems = (diffCount === 0)
-        ?  terminal
-            .displayItems
-            .slice(0, maximumSize)
-        : terminal
-            .displayItems
-            .concat(newEntries.slice(0, diffCount).reverse())
-            .slice(0, maximumSize);
+        ? terminal.displayItems.slice()
+        : window(
+            maximumSize,
+            terminal.displayItems
+              .concat(newEntries.slice(0, diffCount).reverse()));
       return {
         displayItems: newDisplayItems,
         maximumSize: maximumSize,
@@ -128,6 +126,12 @@ function createBrowserViewPort(terminal, viewPortOrCommand, prevViewPort) {
       };
     }
   });
+}
+
+function window(size, array) {
+  return array.length <= size
+    ? array.slice()
+    : array.slice(array.length - size);
 }
 
 module.exports = initialize;
