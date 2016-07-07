@@ -1,15 +1,6 @@
 var isNothing = require('./option').isNothing;
 var nothing = require('./option').nothing;
 var something = require('./option').something;
-function extractCommand(prompt) {
-  return (prompt.preCursor + prompt.postCursor).trim();
-}
-function normalizePrompt(prompt) {
-  return {
-    preCursor: extractCommand(prompt),
-    postCursor: ''
-  };
-}
 
 function addChar(abstractViewPort, char) {
   return {
@@ -38,7 +29,6 @@ function completeWord(abstractViewPort, getCandidates) {
   var commandText = abstractViewPort.prompt.preCursor;
   var splitCommand = getPrefix(commandText);
   var candidates = getCandidates(splitCommand[1]);
-  console.log(candidates);
 
   if (candidates.length === 0) {
     return abstractViewPort;
@@ -46,7 +36,7 @@ function completeWord(abstractViewPort, getCandidates) {
     return {
       timeline: abstractViewPort.timeline,
       prompt: {
-        preCursor: splitCommand[0] + candidates[0] + abstractViewPort.prompt.postCursor,
+        preCursor: splitCommand[0] + candidates[0] + ' ' + abstractViewPort.prompt.postCursor,
         postCursor: abstractViewPort.prompt.postCursor
       }
     };
@@ -115,6 +105,10 @@ function deleteWord(abstractViewPort) {
   };
 }
 
+function extractCommand(prompt) {
+  return (prompt.preCursor + prompt.postCursor).trim();
+}
+
 // fastForwardCommandHistory
 function fastForwardHistory(abstractViewPort) {
   var newCachedPromptMaybe, newPast, newPrompt;
@@ -156,7 +150,6 @@ function fastForwardHistory(abstractViewPort) {
 function getPrefix(command) {
   var regex = /^(.*[\s\(\)\[\]])([^\(\)\[\]]*)/;
   var match = regex.exec(command);
-  console.log('match: ', match);
   return match == null
     ? ['', command]
     : [match[1], match[2]];
@@ -222,6 +215,13 @@ function noOp(abstractViewPort) {
   return abstractViewPort;
 }
 
+function normalizePrompt(prompt) {
+  return {
+    preCursor: extractCommand(prompt),
+    postCursor: ''
+  };
+}
+
 // rewindCommandHistory
 function rewindHistory(abstractViewPort) {
   var newCachedPromptMaybe, newFuture;
@@ -257,6 +257,54 @@ function rewindHistory(abstractViewPort) {
         future: newFuture
       }
     }
+  };
+}
+
+function scrollDown(abstractViewPort) {
+  var newFuture, newPast;
+  var past = abstractViewPort.timeline.entries.past;
+  var future = abstractViewPort.timeline.entries.future;
+  if (past.length > 0) {
+    newPast = [future[0]].concat(past);
+    newFuture = future.slice(1);
+  } else {
+    newPast = past;
+    newFuture = future;
+  }
+  return {
+    timeline: {
+      cachedPromptMaybe: abstractViewPort.timeline.cachedPromptMaybe,
+      entries: {
+        past: newPast,
+        future: newFuture
+      },
+      prompts: abstractViewPort.timeline.prompts
+    },
+    prompt: abstractViewPort.prompt
+  };
+}
+
+function scrollUp(abstractViewPort) {
+  var newFuture, newPast;
+  var past = abstractViewPort.timeline.entries.past;
+  var future = abstractViewPort.timeline.entries.future;
+  if (past.length > 0) {
+    newPast = past.length > 0 ? past.slice(1) : past;
+    newFuture = [past[0]].concat(future);
+  } else {
+    newPast = past;
+    newFuture = future;
+  }
+  return {
+    timeline: {
+      cachedPromptMaybe: abstractViewPort.timeline.cachedPromptMaybe,
+      entries: {
+        past: newPast,
+        future: newFuture
+      },
+      prompts: abstractViewPort.timeline.prompts
+    },
+    prompt: abstractViewPort.prompt
   };
 }
 
@@ -309,7 +357,7 @@ function submit(abstractViewPort, transform) {
   };
 }
 
-var interpreter = {
+module.exports = {
   addChar: addChar,
   clearConsole: clearConsole,
   completeWord: completeWord,
@@ -324,7 +372,7 @@ var interpreter = {
   moveCursorToStart: moveCursorToStart,
   noOp: noOp,
   rewindHistory: rewindHistory,
+  scrollDown: scrollDown,
+  scrollUp: scrollUp,
   submit: submit,
 };
-
-module.exports = interpreter;

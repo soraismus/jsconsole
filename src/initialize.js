@@ -45,6 +45,12 @@ function getNextAbstractViewPort(event, transform, getCandidates) {
         return viewPort(interpreter.deletePreCursor(abstractViewPort));
       case w:
         return viewPort(interpreter.deleteWord(abstractViewPort));
+    }
+    switch (event.keyCode) {
+      case down:
+        return viewPort(interpreter.scrollDown(abstractViewPort));
+      case up:
+        return viewPort(interpreter.scrollUp(abstractViewPort));
       default:
         return viewPort(interpreter.noOp(abstractViewPort));
     }
@@ -79,6 +85,7 @@ function getNextAbstractViewPort(event, transform, getCandidates) {
   }
 }
 
+function _(x) { return x == null ? x : x.value; }
 function handleEvent(promptLabel, transform, getCandidates) {
   return function (event) {
     viewPortOrCommand = getNextAbstractViewPort(event, transform, getCandidates);
@@ -86,10 +93,18 @@ function handleEvent(promptLabel, transform, getCandidates) {
       browserViewPort,
       viewPortOrCommand,
       abstractViewPort);
+    past = abstractViewPort.timeline.entries.past.map(_);
+    future = abstractViewPort.timeline.entries.future.map(_);
+    console.log('past', past)
+    console.log('future', future)
     abstractViewPort = viewPortOrCommand.case({
       command: function () { return abstractViewPort; },
       viewPort: function (viewPort) { return viewPort; }
     });
+    past = abstractViewPort.timeline.entries.past.map(_);
+    future = abstractViewPort.timeline.entries.future.map(_);
+    console.log('past', past)
+    console.log('future', future)
     browserViewPort = newTerminal;
     rerender( 
       document.getElementById('console'),
@@ -116,16 +131,41 @@ function createBrowserViewPort(terminal, viewPortOrCommand, prevViewPort) {
       };
     },
     viewPort: function (newViewPort) {
+      var newDisplayItems;
       var maximumSize = terminal.maximumSize;
       var newEntries = newViewPort.timeline.entries.past;
       var prevEntries = prevViewPort.timeline.entries.past;
       var diffCount = newEntries.length - prevEntries.length;
+      if (diffCount === 0) { // Some kind of prompt modification.
+        newDisplayItems = terminal.displayItems;
+      } else if (diffCount > 0) { // Submittal, word completion, or scrollDown.
+        newDisplayItems =
+          window(
+            maximumSize,
+            terminal.displayItems.concat(
+              newEntries.slice(0, diffCount).reverse()));
+      } else { // scrollUp.
+        var displayItems = terminal.displayItems;
+        if (displayItems.length < terminal.maximumSize) {
+          newDisplayItems = displayItems;
+        } else {
+          //newDisplayItems = displayItems;
+          newDisplayItems =
+            window(
+              maximumSize,
+              terminal.displayItems.concat(
+                newEntries.slice(0, diffCount).reverse()));
+        }
+      }
+
+      /*
       var newDisplayItems = (diffCount === 0)
-        ? terminal.displayItems.slice()
+        ? terminal.displayItems
         : window(
             maximumSize,
             terminal.displayItems
               .concat(newEntries.slice(0, diffCount).reverse()));
+      */
       return {
         displayItems: newDisplayItems,
         maximumSize: maximumSize,
