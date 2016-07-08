@@ -149,10 +149,10 @@ function createFrame(frame, viewportOrCommand, prevViewPort) {
       var newEntries = newViewPort.timeline.entries.all;
       var prevEntries = prevViewPort.timeline.entries.all;
       var diffCount = newEntries.length - prevEntries.length;
-      if (diffCount === 0) { // Some kind of prompt modification.
+      if (diffCount === 0) {
         offset = frame.offset;
         start = frame.start;
-      } else if (diffCount > 0) { // Submittal, word completion, or scrollDown.
+      } else if (diffCount > 0) {
         if (frame.offset + diffCount >= maximumSize) {
           offset = maximumSize;
           start = frame.start + ((diffCount + frame.offset) - maximumSize);

@@ -45,9 +45,9 @@ function completeWord(abstractViewPort, getCandidates) {
       timeline: {
         cachedPromptMaybe: abstractViewPort.timeline.cachedPromptMaybe,
         entries: {
-          all: [{ type: 'completion', value: candidates.join(' ') }].concat(
+          all: abstractViewPort.timeline.entries.all.concat(
             [{ type: 'command', value: extractCommand(abstractViewPort.prompt) }],
-            abstractViewPort.timeline.entries.all),
+            [{ type: 'completion', value: candidates.join(' ') }])
         },
         prompts: {
           past: abstractViewPort.timeline.prompts.future.reverse().concat(
@@ -266,20 +266,15 @@ function scrollUp(abstractViewPort) {
   return abstractViewPort;
 }
 
-// NOTE: `submit` will be more comman than `rewind` or `fastforward`,
-// so perhaps past prompts and entries shouldn't be reversed.
 function submit(abstractViewPort, transform) {
   var newCachedPromptMaybe, newFuture;
 
   if (transform == null) {
     transform = function (value) {
       var results;
-      // TODO: [{ type: 'display'/'pure',etc., value: value }]
       return (results = [{ effect: false, value: value }]);
     };
   }
-
-  // enum Entry { command, completion, display, error, response }
 
   var commandText = extractCommand(abstractViewPort.prompt);
   var results = transform(commandText);
@@ -298,12 +293,6 @@ function submit(abstractViewPort, transform) {
           [command],
           displayEntries,
           [response])
-
-        //all: [response].concat(
-        //  displayEntries.reverse(),
-        //  [command],
-        //  abstractViewPort.timeline.entries.all),
-
       },
       prompts: {
         past: [normalizePrompt(abstractViewPort.prompt)].concat(
