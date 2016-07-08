@@ -122,31 +122,33 @@ function createFrame(frame, viewportOrCommand, prevViewPort) {
           return {
             maximumSize: frame.maximumSize,
             offset: 0,
-            start: frame.start
+            start: prevViewPort.timeline.entries.all.length
           };
         case 'scrollDown':
+          var length = prevViewPort.timeline.entries.all.length;
           return {
             maximumSize: frame.maximumSize,
             offset: frame.offset,
-            //start: prevViewPort.timeline.entries.all.length - frame.start >= frame.offset ? frame.start : frame.start + 1
-            start: prevViewPort.timeline.entries.all.length - frame.start <= frame.maximumSize ? frame.start : frame.start + 1
+            start: length - frame.start <= frame.maximumSize
+              ? frame.start
+              : frame.start + 1
           };
         case 'scrollUp':
           return {
             maximumSize: frame.maximumSize,
-            offset: frame.offset,
+            offset: frame.offset < frame.maximumSize
+              ? frame.offset + 1
+              : frame.offset,
             start: frame.start - 1 < 0 ? 0 : frame.start - 1
           };
       }
     },
     viewport: function (newViewPort) {
-      var newDisplayItems, offset, start;
-
+      var offset, start;
       var maximumSize = frame.maximumSize;
       var newEntries = newViewPort.timeline.entries.all;
       var prevEntries = prevViewPort.timeline.entries.all;
       var diffCount = newEntries.length - prevEntries.length;
-
       if (diffCount === 0) { // Some kind of prompt modification.
         offset = frame.offset;
         start = frame.start;
@@ -158,7 +160,6 @@ function createFrame(frame, viewportOrCommand, prevViewPort) {
           offset = frame.offset + diffCount;
           start = frame.start;
         }
-
       }
       return {
         maximumSize: maximumSize,
