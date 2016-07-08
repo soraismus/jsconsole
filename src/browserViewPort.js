@@ -1,10 +1,7 @@
-var browserViewPort = {
-  displayItems: [],
-  prompt: {
-    preCursor: '',
-    postCursor: ''
-  },
-  maximumSize: 23
+var frame = {
+  maximumSize: 23,
+  offset: 0,
+  start: 0
 };
 
-module.exports = browserViewPort;
+module.exports = frame;

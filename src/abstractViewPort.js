@@ -1,9 +1,10 @@
 var nothing = require('./option').nothing;
 
-var abstractViewPort = {
+var viewport = {
   timeline: {
     cachedPromptMaybe: nothing(),
     entries: {
+      all: [],
       past: [],
       future: []
     },
@@ -18,4 +19,4 @@ var abstractViewPort = {
   }
 };
 
-module.exports = abstractViewPort;
+module.exports = viewport;

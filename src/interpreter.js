@@ -45,11 +45,9 @@ function completeWord(abstractViewPort, getCandidates) {
       timeline: {
         cachedPromptMaybe: abstractViewPort.timeline.cachedPromptMaybe,
         entries: {
-          past: [{ type: 'completion', value: candidates.join(' ') }].concat(
+          all: [{ type: 'completion', value: candidates.join(' ') }].concat(
             [{ type: 'command', value: extractCommand(abstractViewPort.prompt) }],
-            abstractViewPort.timeline.entries.future.reverse(),
-            abstractViewPort.timeline.entries.past),
-          future: []
+            abstractViewPort.timeline.entries.all),
         },
         prompts: {
           past: abstractViewPort.timeline.prompts.future.reverse().concat(
@@ -261,51 +259,11 @@ function rewindHistory(abstractViewPort) {
 }
 
 function scrollDown(abstractViewPort) {
-  var newFuture, newPast;
-  var past = abstractViewPort.timeline.entries.past;
-  var future = abstractViewPort.timeline.entries.future;
-  if (past.length > 0) {
-    newPast = [future[0]].concat(past);
-    newFuture = future.slice(1);
-  } else {
-    newPast = past;
-    newFuture = future;
-  }
-  return {
-    timeline: {
-      cachedPromptMaybe: abstractViewPort.timeline.cachedPromptMaybe,
-      entries: {
-        past: newPast,
-        future: newFuture
-      },
-      prompts: abstractViewPort.timeline.prompts
-    },
-    prompt: abstractViewPort.prompt
-  };
+  return abstractViewPort;
 }
 
 function scrollUp(abstractViewPort) {
-  var newFuture, newPast;
-  var past = abstractViewPort.timeline.entries.past;
-  var future = abstractViewPort.timeline.entries.future;
-  if (past.length > 0) {
-    newPast = past.length > 0 ? past.slice(1) : past;
-    newFuture = [past[0]].concat(future);
-  } else {
-    newPast = past;
-    newFuture = future;
-  }
-  return {
-    timeline: {
-      cachedPromptMaybe: abstractViewPort.timeline.cachedPromptMaybe,
-      entries: {
-        past: newPast,
-        future: newFuture
-      },
-      prompts: abstractViewPort.timeline.prompts
-    },
-    prompt: abstractViewPort.prompt
-  };
+  return abstractViewPort;
 }
 
 // NOTE: `submit` will be more comman than `rewind` or `fastforward`,
@@ -336,12 +294,16 @@ function submit(abstractViewPort, transform) {
     timeline: {
       cachedPromptMaybe: nothing(),
       entries: {
-        past: [response].concat(
-          displayEntries.reverse(),
+        all: abstractViewPort.timeline.entries.all.concat(
           [command],
-          abstractViewPort.timeline.entries.future.reverse(),
-          abstractViewPort.timeline.entries.past),
-        future: []
+          displayEntries,
+          [response])
+
+        //all: [response].concat(
+        //  displayEntries.reverse(),
+        //  [command],
+        //  abstractViewPort.timeline.entries.all),
+
       },
       prompts: {
         past: [normalizePrompt(abstractViewPort.prompt)].concat(

@@ -5,7 +5,7 @@ var elements               = require('../lib/elements');
 var DIV                    = elements.DIV;
 var PRE                    = elements.PRE;
 
-function rerender(node, prefixes, browserViewPort) {
+function rerender(node, prefixes, viewPort, frame) {
   var completionLabel = prefixes.completionLabel;
   var displayLabel = prefixes.displayLabel;
   var errorLabel = prefixes.errorLabel;
@@ -38,12 +38,11 @@ function rerender(node, prefixes, browserViewPort) {
           }
         },
         components.header,
-        browserViewPort.displayItems.map(renderComponent.bind(null, prefixes)),
+        viewPort.timeline.entries.all.slice(frame.start, frame.start + frame.offset).map(renderComponent.bind(null, prefixes)),
         components.createPrompt(
           promptLabel,
-          browserViewPort.prompt.preCursor,
-          browserViewPort.prompt.postCursor))));
-        /* + CURSOR + browserViewPort.prompt.postCursor */
+          viewPort.prompt.preCursor,
+          viewPort.prompt.postCursor))));
 }
 
 function renderComponent(prefixes, component) {

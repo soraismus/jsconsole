@@ -25,91 +25,83 @@ function command(value) {
   return createVariant('command', value);
 }
 
-function viewPort(value) {
-  return createVariant('viewPort', value);
+function viewport(value) {
+  return createVariant('viewport', value);
 }
 
-function getNextAbstractViewPort(event, transform, getCandidates) {
+function getViewportOrCommand(event, transform, getCandidates) {
   event.preventDefault();
   if (event.ctrlKey) {
     switch (event.charCode) {
       case a:
-        return viewPort(interpreter.moveCursorToStart(abstractViewPort));
+        return viewport(interpreter.moveCursorToStart(abstractViewPort));
       case e:
-        return viewPort(interpreter.moveCursorToEnd(abstractViewPort));
+        return viewport(interpreter.moveCursorToEnd(abstractViewPort));
       case h:
-        return viewPort(interpreter.deleteLeftChar(abstractViewPort));
+        return viewport(interpreter.deleteLeftChar(abstractViewPort));
       case l:
         return command({ command: 'clearConsole' });
       case u:
-        return viewPort(interpreter.deletePreCursor(abstractViewPort));
+        return viewport(interpreter.deletePreCursor(abstractViewPort));
       case w:
-        return viewPort(interpreter.deleteWord(abstractViewPort));
+        return viewport(interpreter.deleteWord(abstractViewPort));
     }
     switch (event.keyCode) {
       case down:
-        return viewPort(interpreter.scrollDown(abstractViewPort));
+        return command({ command: 'scrollDown' });
       case up:
-        return viewPort(interpreter.scrollUp(abstractViewPort));
+        return command({ command: 'scrollUp' });
       default:
-        return viewPort(interpreter.noOp(abstractViewPort));
+        return viewport(interpreter.noOp(abstractViewPort));
     }
   }
   if (event.altKey) {
-    return viewPort(interpreter.noOp(abstractViewPort));
+    return viewport(interpreter.noOp(abstractViewPort));
   }
   switch (event.keyCode) {
     case enter:
-      return viewPort(interpreter.submit(abstractViewPort, transform));
+      return viewport(interpreter.submit(abstractViewPort, transform));
     case backspace:
-      return viewPort(interpreter.deleteLeftChar(abstractViewPort));
+      return viewport(interpreter.deleteLeftChar(abstractViewPort));
     case left:
-      return viewPort(interpreter.moveCursorLeft(abstractViewPort));
+      return viewport(interpreter.moveCursorLeft(abstractViewPort));
     case right:
-      return viewPort(interpreter.moveCursorRight(abstractViewPort));
+      return viewport(interpreter.moveCursorRight(abstractViewPort));
     case up:
-      return viewPort(interpreter.rewindHistory(abstractViewPort));
+      return viewport(interpreter.rewindHistory(abstractViewPort));
     case down:
-      return viewPort(interpreter.fastForwardHistory(abstractViewPort));
+      return viewport(interpreter.fastForwardHistory(abstractViewPort));
     case _delete:
-      return viewPort(interpreter.deleteRightChar(abstractViewPort));
+      return viewport(interpreter.deleteRightChar(abstractViewPort));
     case tab:
-      return viewPort(
+      return viewport(
         interpreter.completeWord(
           abstractViewPort,
           getCandidates));
     default:
-      return viewPort(interpreter.addChar(
+      return viewport(interpreter.addChar(
         abstractViewPort,
         String.fromCharCode(event.charCode)));
   }
 }
 
-function _(x) { return x == null ? x : x.value; }
 function handleEvent(promptLabel, transform, getCandidates) {
   return function (event) {
-    viewPortOrCommand = getNextAbstractViewPort(event, transform, getCandidates);
-    newTerminal = createBrowserViewPort(
+    viewportOrCommand = getViewportOrCommand(event, transform, getCandidates);
+    frame = createFrame(
       browserViewPort,
-      viewPortOrCommand,
+      viewportOrCommand,
       abstractViewPort);
-    past = abstractViewPort.timeline.entries.past.map(_);
-    future = abstractViewPort.timeline.entries.future.map(_);
-    console.log('past', past)
-    console.log('future', future)
-    abstractViewPort = viewPortOrCommand.case({
+    abstractViewPort = viewportOrCommand.case({
       command: function () { return abstractViewPort; },
-      viewPort: function (viewPort) { return viewPort; }
+      viewport: function (viewport) { return viewport; }
     });
-    past = abstractViewPort.timeline.entries.past.map(_);
-    future = abstractViewPort.timeline.entries.future.map(_);
-    console.log('past', past)
-    console.log('future', future)
-    browserViewPort = newTerminal;
-    rerender( 
+    browserViewPort = frame;
+    rerender(
       document.getElementById('console'),
       { promptLabel: promptLabel },
-      browserViewPort);
+      abstractViewPort,
+      frame);
   };
 }
 
@@ -121,55 +113,57 @@ function initialize(config) {
   document.addEventListener('keypress', handleEvent(promptLabel, transform, getCandidates));
 }
 
-function createBrowserViewPort(terminal, viewPortOrCommand, prevViewPort) {
-  return viewPortOrCommand.case({
-    command: function () {
-      return {
-        displayItems: [],
-        maximumSize: terminal.maximumSize,
-        prompt: prevViewPort.prompt
-      };
-    },
-    viewPort: function (newViewPort) {
-      var newDisplayItems;
-      var maximumSize = terminal.maximumSize;
-      var newEntries = newViewPort.timeline.entries.past;
-      var prevEntries = prevViewPort.timeline.entries.past;
-      var diffCount = newEntries.length - prevEntries.length;
-      if (diffCount === 0) { // Some kind of prompt modification.
-        newDisplayItems = terminal.displayItems;
-      } else if (diffCount > 0) { // Submittal, word completion, or scrollDown.
-        newDisplayItems =
-          window(
-            maximumSize,
-            terminal.displayItems.concat(
-              newEntries.slice(0, diffCount).reverse()));
-      } else { // scrollUp.
-        var displayItems = terminal.displayItems;
-        if (displayItems.length < terminal.maximumSize) {
-          newDisplayItems = displayItems;
-        } else {
-          //newDisplayItems = displayItems;
-          newDisplayItems =
-            window(
-              maximumSize,
-              terminal.displayItems.concat(
-                newEntries.slice(0, diffCount).reverse()));
-        }
+// TODO: Create factories for `frame` and `viewport` to reduce coupling.
+function createFrame(frame, viewportOrCommand, prevViewPort) {
+  return viewportOrCommand.case({
+    command: function (command) {
+      switch (command.command) {
+        case 'clearConsole':
+          return {
+            maximumSize: frame.maximumSize,
+            offset: 0,
+            start: frame.start
+          };
+        case 'scrollDown':
+          return {
+            maximumSize: frame.maximumSize,
+            offset: frame.offset,
+            //start: prevViewPort.timeline.entries.all.length - frame.start >= frame.offset ? frame.start : frame.start + 1
+            start: prevViewPort.timeline.entries.all.length - frame.start <= frame.maximumSize ? frame.start : frame.start + 1
+          };
+        case 'scrollUp':
+          return {
+            maximumSize: frame.maximumSize,
+            offset: frame.offset,
+            start: frame.start - 1 < 0 ? 0 : frame.start - 1
+          };
       }
+    },
+    viewport: function (newViewPort) {
+      var newDisplayItems, offset, start;
 
-      /*
-      var newDisplayItems = (diffCount === 0)
-        ? terminal.displayItems
-        : window(
-            maximumSize,
-            terminal.displayItems
-              .concat(newEntries.slice(0, diffCount).reverse()));
-      */
+      var maximumSize = frame.maximumSize;
+      var newEntries = newViewPort.timeline.entries.all;
+      var prevEntries = prevViewPort.timeline.entries.all;
+      var diffCount = newEntries.length - prevEntries.length;
+
+      if (diffCount === 0) { // Some kind of prompt modification.
+        offset = frame.offset;
+        start = frame.start;
+      } else if (diffCount > 0) { // Submittal, word completion, or scrollDown.
+        if (frame.offset + diffCount >= maximumSize) {
+          offset = maximumSize;
+          start = frame.start + ((diffCount + frame.offset) - maximumSize);
+        } else {
+          offset = frame.offset + diffCount;
+          start = frame.start;
+        }
+
+      }
       return {
-        displayItems: newDisplayItems,
         maximumSize: maximumSize,
-        prompt: newViewPort.prompt
+        offset: offset,
+        start: start
       };
     }
   });
