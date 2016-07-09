@@ -4,6 +4,7 @@ var something = require('./option').something;
 
 function addChar(abstractViewPort, char) {
   return {
+    entries: abstractViewPort.entries, 
     timeline: abstractViewPort.timeline, 
     prompt: {
       preCursor: abstractViewPort.prompt.preCursor + char,
@@ -34,6 +35,7 @@ function completeWord(abstractViewPort, getCandidates) {
     return abstractViewPort;
   } else if (candidates.length === 1) {
     return {
+      entries: abstractViewPort.entries,
       timeline: abstractViewPort.timeline,
       prompt: {
         preCursor: splitCommand[0] + candidates[0] + ' ' + abstractViewPort.prompt.postCursor,
@@ -42,13 +44,11 @@ function completeWord(abstractViewPort, getCandidates) {
     };
   } else {
     return {
+      entries: abstractViewPort.entries.concat(
+          [{ type: 'command', value: extractCommand(abstractViewPort.prompt) }],
+          [{ type: 'completion', value: candidates.join(' ') }]),
       timeline: {
         cachedPromptMaybe: abstractViewPort.timeline.cachedPromptMaybe,
-        entries: {
-          all: abstractViewPort.timeline.entries.all.concat(
-            [{ type: 'command', value: extractCommand(abstractViewPort.prompt) }],
-            [{ type: 'completion', value: candidates.join(' ') }])
-        },
         prompts: {
           past: abstractViewPort.timeline.prompts.future.reverse().concat(
             abstractViewPort.timeline.prompts.past),
@@ -62,6 +62,7 @@ function completeWord(abstractViewPort, getCandidates) {
 
 function deleteLeftChar(abstractViewPort) {
   return {
+    entries: abstractViewPort.entries, 
     timeline: abstractViewPort.timeline, 
     prompt: {
       preCursor: abstractViewPort.prompt.preCursor.slice(0, -1),
@@ -72,6 +73,7 @@ function deleteLeftChar(abstractViewPort) {
 
 function deletePreCursor(abstractViewPort) {
   return {
+    entries: abstractViewPort.entries, 
     timeline: abstractViewPort.timeline, 
     prompt: {
       preCursor: '',
@@ -82,6 +84,7 @@ function deletePreCursor(abstractViewPort) {
 
 function deleteRightChar(abstractViewPort) {
   return {
+    entries: abstractViewPort.entries, 
     timeline: abstractViewPort.timeline, 
     prompt: {
       preCursor: abstractViewPort.prompt.preCursor,
@@ -93,6 +96,7 @@ function deleteRightChar(abstractViewPort) {
 function deleteWord(abstractViewPort) {
   var preCursor = abstractViewPort.prompt.preCursor;
   return {
+    entries: abstractViewPort.entries, 
     timeline: abstractViewPort.timeline, 
     prompt: {
       preCursor: preCursor.slice(
@@ -134,9 +138,9 @@ function fastForwardHistory(abstractViewPort) {
 
   return {
     prompt: newPrompt,
+    entries: abstractViewPort.entries,
     timeline: {
       cachedPromptMaybe: newCachedPromptMaybe,
-      entries: abstractViewPort.timeline.entries,
       prompts: {
         past: newPast,
         future: newFuture
@@ -161,6 +165,7 @@ function moveCursorLeft(abstractViewPort) {
   } else {
     var postCursor = abstractViewPort.prompt.postCursor;
     return {
+      entries: abstractViewPort.entries,
       timeline: abstractViewPort.timeline,
       prompt: {
         preCursor: preCursor.slice(0, -1),
@@ -177,6 +182,7 @@ function moveCursorRight(abstractViewPort) {
   } else {
     var preCursor = abstractViewPort.prompt.preCursor;
     return {
+      entries: abstractViewPort.entries,
       timeline: abstractViewPort.timeline,
       prompt: {
         preCursor: preCursor + postCursor[0],
@@ -189,6 +195,7 @@ function moveCursorRight(abstractViewPort) {
 function moveCursorToEnd(abstractViewPort) {
   var prompt = abstractViewPort.prompt;
   return {
+    entries: abstractViewPort.entries,
     timeline: abstractViewPort.timeline,
     prompt: {
       preCursor: prompt.preCursor + prompt.postCursor,
@@ -200,6 +207,7 @@ function moveCursorToEnd(abstractViewPort) {
 function moveCursorToStart(abstractViewPort) {
   var prompt = abstractViewPort.prompt;
   return {
+    entries: abstractViewPort.entries,
     timeline: abstractViewPort.timeline,
     prompt: {
       preCursor: '',
@@ -247,23 +255,15 @@ function rewindHistory(abstractViewPort) {
 
   return {
     prompt: newPrompt,
+    entries: abstractViewPort.entries,
     timeline: {
       cachedPromptMaybe: newCachedPromptMaybe,
-      entries: abstractViewPort.timeline.entries,
       prompts: {
         past: newPast,
         future: newFuture
       }
     }
   };
-}
-
-function scrollDown(abstractViewPort) {
-  return abstractViewPort;
-}
-
-function scrollUp(abstractViewPort) {
-  return abstractViewPort;
 }
 
 function submit(abstractViewPort, transform) {
@@ -284,19 +284,20 @@ function submit(abstractViewPort, transform) {
     .map(function (display) { return { type: 'display', value: display.value }});
   var response = { type: 'response', value: results[results.length - 1].value };
   var command = { type: 'command', value: commandText };
+  var future = abstractViewPort.timeline.prompts.future.reverse();
+  var prompt = normalizePrompt(abstractViewPort.prompt);
 
   return {
+    entries: abstractViewPort.entries.concat(
+        [command],
+        displayEntries,
+        [response]),
     timeline: {
       cachedPromptMaybe: nothing(),
-      entries: {
-        all: abstractViewPort.timeline.entries.all.concat(
-          [command],
-          displayEntries,
-          [response])
-      },
       prompts: {
         past: [normalizePrompt(abstractViewPort.prompt)].concat(
-          abstractViewPort.timeline.prompts.future.reverse(),
+          future,
+          future.length > 0 ?  [prompt] : [],
           abstractViewPort.timeline.prompts.past),
         future: []
       }
@@ -323,7 +324,5 @@ module.exports = {
   moveCursorToStart: moveCursorToStart,
   noOp: noOp,
   rewindHistory: rewindHistory,
-  scrollDown: scrollDown,
-  scrollUp: scrollUp,
   submit: submit,
 };

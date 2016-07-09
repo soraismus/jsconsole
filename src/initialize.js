@@ -1,9 +1,9 @@
-var abstractViewPort  = require('./abstractViewPort');
-var browserViewPort   = require('./browserViewPort');
-var initializeUi      = require('./initializeUi');
-var interpreter       = require('./interpreter');
-var rerender          = require('./rerender');
-var createVariant     = require('./variant').create;
+var terminal      = require('./terminal');
+var frame         = require('./frame');
+var initializeUi  = require('./initializeUi');
+var interpreter   = require('./interpreter');
+var rerender      = require('./rerender');
+var createVariant = require('./variant').create;
 
 var a =  97;
 var e = 101;
@@ -21,87 +21,93 @@ var right     =  39;
 var up        =  38;
 var tab       =   9;
 
-function command(value) {
+function Command(value) {
   return createVariant('command', value);
 }
 
-function viewport(value) {
-  return createVariant('viewport', value);
+function Terminal(value) {
+  return createVariant('terminal', value);
 }
 
-function getViewportOrCommand(event, transform, getCandidates) {
+function getTerminalOrCommand(event, transform, getCandidates) {
   event.preventDefault();
   if (event.ctrlKey) {
     switch (event.charCode) {
       case a:
-        return viewport(interpreter.moveCursorToStart(abstractViewPort));
+        return Terminal(interpreter.moveCursorToStart(terminal));
       case e:
-        return viewport(interpreter.moveCursorToEnd(abstractViewPort));
+        return Terminal(interpreter.moveCursorToEnd(terminal));
       case h:
-        return viewport(interpreter.deleteLeftChar(abstractViewPort));
+        return Terminal(interpreter.deleteLeftChar(terminal));
       case l:
-        return command({ command: 'clearConsole' });
+        return Command({ command: 'clearConsole' });
       case u:
-        return viewport(interpreter.deletePreCursor(abstractViewPort));
+        return Terminal(interpreter.deletePreCursor(terminal));
       case w:
-        return viewport(interpreter.deleteWord(abstractViewPort));
+        return Terminal(interpreter.deleteWord(terminal));
     }
     switch (event.keyCode) {
       case down:
-        return command({ command: 'scrollDown' });
+        return Command({ command: 'scrollDown' });
       case up:
-        return command({ command: 'scrollUp' });
+        return Command({ command: 'scrollUp' });
       default:
-        return viewport(interpreter.noOp(abstractViewPort));
+        return Terminal(interpreter.noOp(terminal));
     }
   }
   if (event.altKey) {
-    return viewport(interpreter.noOp(abstractViewPort));
+    return Terminal(interpreter.noOp(terminal));
   }
   switch (event.keyCode) {
     case enter:
-      return viewport(interpreter.submit(abstractViewPort, transform));
+      return Terminal(interpreter.submit(terminal, transform));
     case backspace:
-      return viewport(interpreter.deleteLeftChar(abstractViewPort));
+      return Terminal(interpreter.deleteLeftChar(terminal));
     case left:
-      return viewport(interpreter.moveCursorLeft(abstractViewPort));
+      return Terminal(interpreter.moveCursorLeft(terminal));
     case right:
-      return viewport(interpreter.moveCursorRight(abstractViewPort));
+      return Terminal(interpreter.moveCursorRight(terminal));
     case up:
-      return viewport(interpreter.rewindHistory(abstractViewPort));
+      return Terminal(interpreter.rewindHistory(terminal));
     case down:
-      return viewport(interpreter.fastForwardHistory(abstractViewPort));
+      return Terminal(interpreter.fastForwardHistory(terminal));
     case _delete:
-      return viewport(interpreter.deleteRightChar(abstractViewPort));
+      return Terminal(interpreter.deleteRightChar(terminal));
     case tab:
-      return viewport(
+      return Terminal(
         interpreter.completeWord(
-          abstractViewPort,
+          terminal,
           getCandidates));
     default:
-      return viewport(interpreter.addChar(
-        abstractViewPort,
+      return Terminal(interpreter.addChar(
+        terminal,
         String.fromCharCode(event.charCode)));
   }
 }
 
 function handleEvent(promptLabel, transform, getCandidates) {
   return function (event) {
-    viewportOrCommand = getViewportOrCommand(event, transform, getCandidates);
-    frame = createFrame(
-      browserViewPort,
-      viewportOrCommand,
-      abstractViewPort);
-    abstractViewPort = viewportOrCommand.case({
-      command: function () { return abstractViewPort; },
-      viewport: function (viewport) { return viewport; }
+    terminalOrCommand = getTerminalOrCommand(event, transform, getCandidates);
+    console.log('old frame: ', frame);
+    console.log('old offset: ', frame.offset);
+    console.log('old start: ', frame.start);
+    newFrame = createFrame(
+      frame,
+      terminalOrCommand,
+      terminal);
+    console.log('new frame: ', newFrame);
+    console.log('new offset: ', newFrame.offset);
+    console.log('new start: ', newFrame.start);
+    terminal = terminalOrCommand.case({
+      command: function () { return terminal; },
+      terminal: function (terminal) { return terminal; }
     });
-    browserViewPort = frame;
+    frame = newFrame;
     rerender(
       document.getElementById('console'),
       { promptLabel: promptLabel },
-      abstractViewPort,
-      frame);
+      terminal,
+      newFrame);
   };
 }
 
@@ -113,19 +119,19 @@ function initialize(config) {
   document.addEventListener('keypress', handleEvent(promptLabel, transform, getCandidates));
 }
 
-// TODO: Create factories for `frame` and `viewport` to reduce coupling.
-function createFrame(frame, viewportOrCommand, prevViewPort) {
-  return viewportOrCommand.case({
+// TODO: Create factories for `frame` and `terminal` to reduce coupling.
+function createFrame(frame, terminalOrCommand, prevViewPort) {
+  return terminalOrCommand.case({
     command: function (command) {
       switch (command.command) {
         case 'clearConsole':
           return {
             maximumSize: frame.maximumSize,
             offset: 0,
-            start: prevViewPort.timeline.entries.all.length
+            start: prevViewPort.entries.length
           };
         case 'scrollDown':
-          var length = prevViewPort.timeline.entries.all.length;
+          var length = prevViewPort.entries.length;
           return {
             maximumSize: frame.maximumSize,
             offset: frame.offset,
@@ -134,20 +140,21 @@ function createFrame(frame, viewportOrCommand, prevViewPort) {
               : frame.start + 1
           };
         case 'scrollUp':
+          var newStart = frame.start - 1 < 0 ? 0 : frame.start - 1;
           return {
             maximumSize: frame.maximumSize,
-            offset: frame.offset < frame.maximumSize
+            offset: frame.offset < frame.maximumSize && (frame.offset < (prevViewPort.entries.length - newStart))
               ? frame.offset + 1
               : frame.offset,
-            start: frame.start - 1 < 0 ? 0 : frame.start - 1
+            start: newStart
           };
       }
     },
-    viewport: function (newViewPort) {
+    terminal: function (newViewPort) {
       var offset, start;
       var maximumSize = frame.maximumSize;
-      var newEntries = newViewPort.timeline.entries.all;
-      var prevEntries = prevViewPort.timeline.entries.all;
+      var newEntries = newViewPort.entries
+      var prevEntries = prevViewPort.entries
       var diffCount = newEntries.length - prevEntries.length;
       if (diffCount === 0) {
         offset = frame.offset;
@@ -168,12 +175,6 @@ function createFrame(frame, viewportOrCommand, prevViewPort) {
       };
     }
   });
-}
-
-function window(size, array) {
-  return array.length <= size
-    ? array.slice()
-    : array.slice(array.length - size);
 }
 
 module.exports = initialize;

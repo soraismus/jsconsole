@@ -38,7 +38,7 @@ function rerender(node, prefixes, viewPort, frame) {
           }
         },
         components.header,
-        viewPort.timeline.entries.all.slice(frame.start, frame.start + frame.offset).map(renderComponent.bind(null, prefixes)),
+        viewPort.entries.slice(frame.start, frame.start + frame.offset).map(renderComponent.bind(null, prefixes)),
         components.createPrompt(
           promptLabel,
           viewPort.prompt.preCursor,
