@@ -1,10 +1,8 @@
 var createFrame    = require('./models/createFrame');
 var createPrompt   = require('./models/createPrompt');
 var createTerminal = require('./models/createTerminal');
-var createTimeline = require('./models/createTimeline');
 var createViewport = require('./models/createViewport');
 var initializeUi   = require('./initializeUi');
-var nothing        = require('./option').nothing;
 var rerender       = require('./rerender');
 var Viewport       = require('./models/viewport');
 
@@ -25,11 +23,8 @@ var up        =  38;
 var tab       =   9;
 
 var viewport = createViewport(
-  createTerminal(
-    [],
-    createTimeline(nothing(), [], []),
-    createPrompt('', '')),
-  createFrame(23, 0, 0));
+  createTerminal([], [], createPrompt('', '')),
+  createFrame(23, 0, 0, 0));
 
 function getViewport(event, transform, getCandidates) {
   event.preventDefault();
@@ -42,7 +37,7 @@ function getViewport(event, transform, getCandidates) {
       case h:
         return Viewport.deleteLeftChar(viewport);
       case l:
-        return Viewport.clearViewport(viewport);
+        return Viewport.clear(viewport);
       case u:
         return Viewport.deletePreCursor(viewport);
       case w:
@@ -70,9 +65,9 @@ function getViewport(event, transform, getCandidates) {
     case right:
       return Viewport.moveCursorRight(viewport);
     case up:
-      return Viewport.rewindHistory(viewport);
+      return Viewport.rewind(viewport);
     case down:
-      return Viewport.fastForwardHistory(viewport);
+      return Viewport.fastForward(viewport);
     case _delete:
       return Viewport.deleteRightChar(viewport);
     case tab:

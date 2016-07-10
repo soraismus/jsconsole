@@ -1,7 +1,39 @@
 var create = require('./createFrame');
 
 function clear(frame, terminal) {
-  return create(frame.maximumSize, 0, terminal.entries.length);
+  return create(
+    frame.maximumSize,
+    0,
+    terminal.entries.length,
+    frame.promptIndex);
+}
+
+function fastForward(frame) {
+  return create(
+    frame.maximumSize,
+    frame.offset,
+    frame.start,
+    frame.promptIndex > 0
+      ? frame.promptIndex - 1
+      : frame.promptIndex);
+}
+
+function resetPromptIndex(frame) {
+  return create(
+    frame.maximumSize,
+    frame.offset,
+    frame.start,
+    0);
+}
+
+function rewind(frame, terminal) {
+  return create(
+    frame.maximumSize,
+    frame.offset,
+    frame.start,
+    terminal.prompts.length > frame.promptIndex
+      ? frame.promptIndex + 1
+      : frame.promptIndex);
 }
 
 function scrollDown(frame, terminal) {
@@ -10,7 +42,8 @@ function scrollDown(frame, terminal) {
     frame.offset,
     terminal.entries.length - frame.start <= frame.maximumSize
       ? frame.start
-      : frame.start + 1);
+      : frame.start + 1,
+    frame.promptIndex);
 }
 
 function scrollUp(frame, terminal) {
@@ -25,11 +58,15 @@ function scrollUp(frame, terminal) {
   return create(
     maximumSize,
     canIncrement ? offset + 1 : offset,
-    newStart);
+    newStart,
+    frame.promptIndex);
 }
 
 module.exports = {
   clear: clear,
+  fastForward: fastForward,
+  resetPromptIndex: resetPromptIndex,
+  rewind: rewind,
   scrollDown: scrollDown,
   scrollUp: scrollUp,
 };

@@ -1,7 +1,7 @@
-module.exports = function (entries, timeline, prompt) {
+module.exports = function (entries, prompts, currentPrompt) {
   return  {
     entries: entries,
-    timeline: timeline,
-    prompt: prompt
+    prompts: prompts,
+    prompt: currentPrompt
   };
 };

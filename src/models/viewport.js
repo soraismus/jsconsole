@@ -1,7 +1,8 @@
-var create      = require('./createViewport');
-var createFrame = require('./createFrame');
-var Frame       = require('./frame');
-var Terminal    = require('./terminal');
+var create         = require('./createViewport');
+var createFrame    = require('./createFrame');
+var createTerminal = require('./createTerminal');
+var Frame          = require('./frame');
+var Terminal       = require('./terminal');
 
 function addChar(viewport, char) {
   return create(
@@ -9,7 +10,7 @@ function addChar(viewport, char) {
     viewport.frame);
 }
 
-function clearViewport(viewport) {
+function clear(viewport) {
   var terminal = viewport.terminal;
   return create(
     terminal,
@@ -24,12 +25,23 @@ function completeWord(viewport, getCandidates) {
     Terminal.completeWord(terminal, getCandidates));
 }
 
+function fastForward(viewport) {
+  return create(
+    viewport.terminal,
+    Frame.fastForward(viewport.frame));
+}
+
 function modifyTerminal(fnName) {
   return function (viewport) {
     return create(
-      Terminal[fnName](viewport.terminal),
-      viewport.frame);
+      Terminal[fnName](refreshTerminal(viewport)),
+      Frame.resetPromptIndex(viewport.frame));
   };
+}
+
+function refreshTerminal(viewport) {
+  var terminal = viewport.terminal;
+  return createTerminal(terminal.entries, terminal.prompts, viewport.prompt);
 }
 
 function resize(frame, oldTerminal, newTerminal) {
@@ -57,7 +69,14 @@ function resize(frame, oldTerminal, newTerminal) {
 
   return create(
     newTerminal,
-    createFrame(maximumSize, offset, start));
+    createFrame(maximumSize, offset, start, frame.promptIndex));
+}
+
+function rewind(viewport) {
+  var terminal = viewport.terminal;
+  return create(
+    terminal,
+    Frame.rewind(viewport.frame, terminal));
 }
 
 function scrollDown(viewport) {
@@ -75,27 +94,27 @@ function scrollUp(viewport) {
 }
 
 function submit(viewport, transform) {
-  var terminal = viewport.terminal;
+  var terminal = refreshTerminal(viewport);
   return resize(
-    viewport.frame,
+    Frame.resetPromptIndex(viewport.frame),
     terminal,
     Terminal.submit(terminal, transform));
 }
 
 module.exports = {
   addChar             : addChar,
-  clearViewport       : clearViewport,
+  clear               : clear,
   completeWord        : completeWord,
   deleteLeftChar      : modifyTerminal('deleteLeftChar'),
   deletePreCursor     : modifyTerminal('deletePreCursor'),
   deleteRightChar     : modifyTerminal('deleteRightChar'),
   deleteWord          : modifyTerminal('deleteWord'),
-  fastForwardHistory  : modifyTerminal('fastForwardHistory'),
+  fastForward         : fastForward,
   moveCursorLeft      : modifyTerminal('moveCursorLeft'),
   moveCursorRight     : modifyTerminal('moveCursorRight'),
   moveCursorToEnd     : modifyTerminal('moveCursorToEnd'),
   moveCursorToStart   : modifyTerminal('moveCursorToStart'),
-  rewindHistory       : modifyTerminal('rewindHistory'),
+  rewind              : rewind,
   scrollDown          : scrollDown,
   scrollUp            : scrollUp,
   submit              : submit

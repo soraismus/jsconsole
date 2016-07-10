@@ -6,7 +6,8 @@ var DIV                    = elements.DIV;
 var PRE                    = elements.PRE;
 
 function rerender(node, prefixes, viewport) {
-  var terminal = viewport.terminal;
+  var entries = viewport.terminal.entries;
+  var prompt = viewport.prompt;
   var frame = viewport.frame;
 
   var completionLabel = prefixes.completionLabel;
@@ -41,11 +42,11 @@ function rerender(node, prefixes, viewport) {
           }
         },
         components.header,
-        terminal.entries.slice(frame.start, frame.start + frame.offset).map(renderComponent.bind(null, prefixes)),
+        entries.slice(frame.start, frame.start + frame.offset).map(renderComponent.bind(null, prefixes)),
         components.createPrompt(
           promptLabel,
-          terminal.prompt.preCursor,
-          terminal.prompt.postCursor))));
+          prompt.preCursor,
+          prompt.postCursor))));
 }
 
 function renderComponent(prefixes, component) {

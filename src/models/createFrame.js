@@ -1,7 +1,8 @@
-module.exports = function (maximumSize, offset, start) {
+module.exports = function (maximumSize, offset, start, promptIndex) {
   return {
     maximumSize: maximumSize,
     offset: offset,
-    start: start
+    start: start,
+    promptIndex: promptIndex
   };
 };

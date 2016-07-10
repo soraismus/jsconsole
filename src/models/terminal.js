@@ -1,14 +1,10 @@
-var create         = require('./createTerminal');
-var createPrompt   = require('./createPrompt');
-var createTimeline = require('./createTimeline');
-var isNothing      = require('../option').isNothing;
-var nothing        = require('../option').nothing;
-var something      = require('../option').something;
+var create       = require('./createTerminal');
+var createPrompt = require('./createPrompt');
 
 function addChar(terminal, char) {
   return create(
     terminal.entries,
-    terminal.timeline,
+    terminal.prompts,
     createPrompt(
       terminal.prompt.preCursor + char,
       terminal.prompt.postCursor));
@@ -31,11 +27,10 @@ function completeWord(terminal, getCandidates) {
     return terminal;
   }
 
-  var entries, timeline, prompt;
+  var entries, prompt;
 
   if (length === 1) {
     entries = terminal.entries;
-    timeline = terminal.timeline;
     prompt = createPrompt(
       splitCommand[0] + candidates[0] + ' ' + terminal.prompt.postCursor,
       terminal.prompt.postCursor);
@@ -43,21 +38,16 @@ function completeWord(terminal, getCandidates) {
     entries = terminal.entries.concat(
       [{ type: 'command', value: extractCommand(terminal.prompt) }],
       [{ type: 'completion', value: candidates.join(' ') }]);
-    timeline = createTimeline(
-      terminal.timeline.cachedPromptMaybe,
-      terminal.timeline.prompts.future.reverse().concat(
-          terminal.timeline.prompts.past),
-      []);
     prompt = terminal.prompt;
   }
 
-  return create(entries, timeline, prompt);
+  return create(entries, terminal.prompts, prompt);
 }
 
 function deleteLeftChar(terminal) {
   return create(
     terminal.entries, 
-    terminal.timeline, 
+    terminal.prompts,
     createPrompt(
       terminal.prompt.preCursor.slice(0, -1),
       terminal.prompt.postCursor));
@@ -66,14 +56,14 @@ function deleteLeftChar(terminal) {
 function deletePreCursor(terminal) {
   return create(
     terminal.entries, 
-    terminal.timeline, 
+    terminal.prompts, 
     createPrompt('', terminal.prompt.postCursor));
 }
 
 function deleteRightChar(terminal) {
   return create(
     terminal.entries, 
-    terminal.timeline, 
+    terminal.prompts, 
     createPrompt(
       terminal.prompt.preCursor,
       terminal.prompt.postCursor.slice(1)));
@@ -83,7 +73,7 @@ function deleteWord(terminal) {
   var preCursor = terminal.prompt.preCursor;
   return create(
     terminal.entries, 
-    terminal.timeline, 
+    terminal.prompts, 
     createPrompt(
       preCursor.slice(0, preCursor.slice(0, -1).lastIndexOf(' ') + 1),
       terminal.prompt.postCursor));
@@ -91,35 +81,6 @@ function deleteWord(terminal) {
 
 function extractCommand(prompt) {
   return (prompt.preCursor + prompt.postCursor).trim();
-}
-
-function fastForwardHistory(terminal) {
-  var newCachedPromptMaybe, newPrompt;
-
-  var timeline = terminal.timeline;
-  var cachedPromptMaybe = timeline.cachedPromptMaybe;
-  var promptTimeline = timeline.prompts;
-  var future = promptTimeline.future;
-
-  if (future.length <= 0 && isNothing(cachedPromptMaybe)) {
-    return terminal;
-  }
-
-  if (future.length <= 0) {
-    newPrompt = cachedPromptMaybe.value;
-    newCachedPromptMaybe = nothing();
-  } else {
-    newPrompt = future[0];
-    newCachedPromptMaybe = cachedPromptMaybe;
-  }
-
-  return create(
-    terminal.entries,
-    createTimeline(
-      newCachedPromptMaybe,
-      [normalizePrompt(terminal.prompt)].concat(promptTimeline.past),
-      future.slice(1)),
-    newPrompt);
 }
 
 function getPrefix(command) {
@@ -139,7 +100,7 @@ function moveCursorLeft(terminal) {
     var postCursor = terminal.prompt.postCursor;
     return create(
       terminal.entries,
-      terminal.timeline,
+      terminal.prompts,
       createPrompt(
         preCursor.slice(0, -1),
         preCursor[preCursorLength - 1] + postCursor));
@@ -154,7 +115,7 @@ function moveCursorRight(terminal) {
     var preCursor = terminal.prompt.preCursor;
     return create(
       terminal.entries,
-      terminal.timeline,
+      terminal.prompts,
       createPrompt(
         preCursor + postCursor[0],
         postCursor.slice(1)));
@@ -165,7 +126,7 @@ function moveCursorToEnd(terminal) {
   var prompt = terminal.prompt;
   return create(
     terminal.entries,
-    terminal.timeline,
+    terminal.prompts,
     createPrompt(prompt.preCursor + prompt.postCursor, ''));
 }
 
@@ -173,42 +134,12 @@ function moveCursorToStart(terminal) {
   var prompt = terminal.prompt;
   return create(
     terminal.entries,
-    terminal.timeline,
+    terminal.prompts,
     createPrompt('', prompt.preCursor + prompt.postCursor));
 }
 
 function normalizePrompt(prompt) {
   return createPrompt(extractCommand(prompt), '');
-}
-
-function rewindHistory(terminal) {
-  var newCachedPromptMaybe, newFuture;
-
-  var timeline = terminal.timeline;
-  var cachedPromptMaybe = timeline.cachedPromptMaybe;
-  var promptTimeline = timeline.prompts;
-  var past = promptTimeline.past;
-  var future = promptTimeline.future;
-
-  if (past.length <= 0) {
-    return terminal;
-  }
-
-  if (isNothing(cachedPromptMaybe)) {
-    newCachedPromptMaybe = something(terminal.prompt);
-    newFuture = future;
-  } else {
-    newCachedPromptMaybe = cachedPromptMaybe;
-    newFuture = [normalizePrompt(terminal.prompt)].concat(future);
-  }
-
-  return create(
-    terminal.entries,
-    createTimeline(
-      newCachedPromptMaybe,
-      past.slice(1),
-      newFuture),
-    past[0]);
 }
 
 function submit(terminal, transform) {
@@ -229,18 +160,11 @@ function submit(terminal, transform) {
     .map(function (display) { return { type: 'display', value: display.value }});
   var response = { type: 'response', value: results[results.length - 1].value };
   var command = { type: 'command', value: commandText };
-  var future = terminal.timeline.prompts.future.reverse();
   var prompt = normalizePrompt(terminal.prompt);
 
   return create(
     terminal.entries.concat([command], displayEntries, [response]),
-    createTimeline(
-      nothing(),
-      [normalizePrompt(terminal.prompt)].concat(
-        future,
-        future.length > 0 ?  [prompt] : [],
-        terminal.timeline.prompts.past),
-      []),
+    [prompt].concat(terminal.prompts),
     createPrompt('', ''));
 }
 
@@ -251,11 +175,9 @@ module.exports = {
   deletePreCursor: deletePreCursor,
   deleteRightChar: deleteRightChar,
   deleteWord: deleteWord,
-  fastForwardHistory: fastForwardHistory,
   moveCursorLeft: moveCursorLeft,
   moveCursorRight: moveCursorRight,
   moveCursorToEnd: moveCursorToEnd,
   moveCursorToStart: moveCursorToStart,
-  rewindHistory: rewindHistory,
   submit: submit
 };
