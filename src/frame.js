@@ -1,15 +1,3 @@
-var frame = {
-  maximumSize: 23,
-  offset: 0,
-  start: 0
-};
+var createFrame = require('./models/createFrame');
 
-function createFrame(maximumSize, offset, start) {
-  return {
-    maximumSize: maximumSize,
-    offset: offset,
-    start: start
-  };
-}
-
-module.exports = frame;
+module.exports = createFrame(23, 0, 0);

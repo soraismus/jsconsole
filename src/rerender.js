@@ -5,7 +5,10 @@ var elements               = require('../lib/elements');
 var DIV                    = elements.DIV;
 var PRE                    = elements.PRE;
 
-function rerender(node, prefixes, viewPort, frame) {
+function rerender(node, prefixes, viewport) {
+  var terminal = viewport.terminal;
+  var frame = viewport.frame;
+
   var completionLabel = prefixes.completionLabel;
   var displayLabel = prefixes.displayLabel;
   var errorLabel = prefixes.errorLabel;
@@ -13,7 +16,7 @@ function rerender(node, prefixes, viewPort, frame) {
   var responseLabel = prefixes.responseLabel;
   node.innerHTML = '';
   createAndAttachElement(
-    node, // document.getElementById('console'),
+    node,
     DIV(
       {
         style: {
@@ -38,11 +41,11 @@ function rerender(node, prefixes, viewPort, frame) {
           }
         },
         components.header,
-        viewPort.entries.slice(frame.start, frame.start + frame.offset).map(renderComponent.bind(null, prefixes)),
+        terminal.entries.slice(frame.start, frame.start + frame.offset).map(renderComponent.bind(null, prefixes)),
         components.createPrompt(
           promptLabel,
-          viewPort.prompt.preCursor,
-          viewPort.prompt.postCursor))));
+          terminal.prompt.preCursor,
+          terminal.prompt.postCursor))));
 }
 
 function renderComponent(prefixes, component) {

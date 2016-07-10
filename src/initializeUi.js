@@ -8,7 +8,7 @@ var PRE                    = elements.PRE;
 
 function initializeUi(promptLabel) {
   createAndAttachElement(
-    document.getElementById('console'),
+    document.getElementById('viewport'),
     DIV(
       {
         style: {
