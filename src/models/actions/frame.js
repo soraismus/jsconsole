@@ -1,4 +1,4 @@
-var create = require('./createFrame');
+var create = require('../types/createFrame');
 
 function clear(frame, terminal) {
   return create(

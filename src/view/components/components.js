@@ -1,4 +1,4 @@
-var SPAN = require('../lib/elements').SPAN;
+var SPAN = require('../../../lib/elements').SPAN;
 
 var emptyString = '';
 

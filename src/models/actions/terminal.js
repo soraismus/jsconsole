@@ -1,5 +1,5 @@
-var create       = require('./createTerminal');
-var createPrompt = require('./createPrompt');
+var create       = require('../types/createTerminal');
+var createPrompt = require('../types/createPrompt');
 
 function addChar(terminal, char) {
   return create(

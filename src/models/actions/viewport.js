@@ -1,6 +1,6 @@
-var create         = require('./createViewport');
-var createFrame    = require('./createFrame');
-var createTerminal = require('./createTerminal');
+var create         = require('../types/createViewport');
+var createFrame    = require('../types/createFrame');
+var createTerminal = require('../types/createTerminal');
 var Frame          = require('./frame');
 var Terminal       = require('./terminal');
 
