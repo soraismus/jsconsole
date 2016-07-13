@@ -9,11 +9,11 @@ function copy(object) {
 
 function _diff(value1, value0, index) {
   if (value1 === value0) {
-    return { tree: {}, commands: [], index: index };
+    return { tree: [], commands: [], index: index };
   }
 
   var _patch;
-  var tree = {};
+  var tree = [];
   var commands = [];
 
   if (Array.isArray(value1)) {
@@ -31,7 +31,7 @@ function _diff(value1, value0, index) {
       if (value1[i] !== value0[i]) {
         _patch = _diff(value1[i], value0[i], index);
         if (_patch.commands.length > 0) {
-          tree[i] = _patch.tree;
+          tree.push({ index: i, value: _patch.tree });
           commands = commands.concat(_patch.commands);
           index = index + _patch.commands.length;
         }
@@ -39,16 +39,18 @@ function _diff(value1, value0, index) {
     }
 
     for (; i < value1.length; i++) {
-      tree[i] = index;
+      tree.push({ index: i, value: index });
       commands.push(['insertAtEnd', value1[i]]);
       index++;
     }
 
+    var removals = [];
     for (; i < value0.length; i++) {
-      tree[i] = index;
+      removals.unshift({ index: i, value: index });
       commands.push(['remove']);
       index++;
     }
+    tree = tree.concat(removals);
 
     return { tree: tree, commands: commands, index: index + 1};
   }
@@ -68,13 +70,13 @@ function _diff(value1, value0, index) {
         if (value1[key] !== value0[key]) {
           _patch = _diff(value1[key], value0[key], index);
           if (_patch.commands.length > 0) {
-            tree[key] = _patch.tree;
+            tree.push({ index: key, value: _patch.tree });
             commands = commands.concat(_patch.commands);
             index = index + _patch.commands.length;
           }
         }
       } else {
-        tree[key] = index;
+        tree.push({ index: key, value: index });
         commands.push(['setAtKey', value1[key]]);
         index++;
       }
@@ -82,7 +84,7 @@ function _diff(value1, value0, index) {
 
     for (var key in value0) {
       if (!value1.hasOwnProperty(key)) {
-        tree[key] = index;
+        tree.push({ index: key, value: index });
         commands.push(['delete']);
         index++;
       }
@@ -100,27 +102,7 @@ function isObject(value) {
 
 var diff = function(value1, value0) {
   var patch = _diff(value1, value0, 0);
-  return { tree: patch.tree, commands: patch.commands };
-};
-
-diff.x0 = {
-  frame: { maximumSize: 23, offset: 0, promptIndex: 0, start: 0 },
-  prompt: { preCursor: '', postCursor: '' },
-  terminal: {
-    entries: [],
-    prompt: { preCursor: '', postCursor: '' },
-    prompts: []
-  }
-};
-
-diff.x1 = {
-  frame: { maximumSize: 23, offset: 0, promptIndex: 0, start: 0 },
-  prompt: { preCursor: '0', postCursor: '' },
-  terminal: {
-    entries: [],
-    prompt: { preCursor: '0', postCursor: '' },
-    prompts: []
-  }
+  return { value: patch.tree, commands: patch.commands };
 };
 
 module.exports = diff;

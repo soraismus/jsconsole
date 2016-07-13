@@ -9,6 +9,8 @@ var Viewport       = require('../models/actions/viewport');
 var diff = require('../diff');
 var recreateConsole = require('../view/control/recreateConsole');
 
+var interpreter = require('../../lib/interpreter');
+
 var a =  97;
 var e = 101;
 var h = 104;
@@ -92,20 +94,22 @@ function handleKeypress(config) {
   return function (event) {
 
     var c0 = recreateConsole({ promptLabel: promptLabel }, viewport);
-    console.log('c0 ', c0);
 
     viewport = getViewport(event, transform, getCandidates);
 
     var c1 = recreateConsole({ promptLabel: promptLabel }, viewport);
-    console.log('c1 ', c1);
-    console.log('diff ', diff(c1, c0));
+    var patch = diff(c1, c0);
 
-    var p0 = pane;
-    pane = createPane(viewport);
-    rerender(
-      config.getRoot(),
-      { promptLabel: promptLabel },
-      viewport);
+    interpreter.modifyElement(
+      document.getElementById('viewport').childNodes[0],
+      patch);
+
+
+    //var p0 = pane;
+    //pane = createPane(viewport);
+    //rerender( config.getRoot(), { promptLabel: promptLabel }, viewport);
+
+    
   };
 }
 
