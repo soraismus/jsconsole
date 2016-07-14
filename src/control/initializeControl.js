@@ -24,7 +24,7 @@ var handleResize   = require('./handleResize');
 module.exports = function (subscribe, config) {
   config.viewport = createViewport(
     createTerminal([], [], createPrompt('', '')),
-    createFrame(23, 0, 0, 0));
+    createFrame(0, 0, 0));
 
   subscribe('keypress', handleKeypress(config));
   subscribe('resize', handleResize(config));

@@ -52,10 +52,6 @@ function getViewport(event, transform, getCandidates, config) {
         return Viewport.deleteWord(viewport);
     }
     switch (event.keyCode) {
-      case down:
-        return Viewport.scrollDown(viewport);
-      case up:
-        return Viewport.scrollUp(viewport);
       default:
         return Viewport.noOp(viewport);
     }
@@ -102,7 +98,18 @@ function handleKeypress(config) {
         recreateConsole({ promptLabel: promptLabel }, config.viewport)));
     //viewport = _viewport;
     config.viewport = _viewport;
+
+    var x0 = document.getElementById('viewport');
+    var x1 = document.getElementById('view');
+    var x2 = document.getElementById('jsconsole');
+    scrollDown(x0);
+    scrollDown(x1);
+    scrollDown(x2);
   };
+}
+
+function scrollDown(node) {
+  node.scrollTop = node.scrollHeight - node.clientHeight;
 }
 
 module.exports = handleKeypress;

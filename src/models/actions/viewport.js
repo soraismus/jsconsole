@@ -34,9 +34,9 @@ function addLineEntries(frame, oldTerminal, newTerminal) {
   }
 
   var out = document.getElementById('viewport').childNodes[0];
-  var isScrolledToBttom = out.scrollHeight - out.clientHeight < out.scrollTop;
+  var isScrolledToBottom = out.scrollHeight - out.clientHeight < out.scrollTop;
   console.log('scroll', 'scrollHeight: ', out.scrollHeight, 'clientHeight', out.clientHeight, 'diff',  out.scrollHeight - out.clientHeight, 'scrollTop',  out.scrollTop);
-  if (isScrolledToBttom) {
+  if (isScrolledToBottom) {
     out.scrollTop = out.scrollHeight - out.clientHeight;
   }
 
@@ -92,20 +92,41 @@ function rewind(viewport) {
     Frame.rewind(viewport.frame, terminal));
 }
 
-function scrollDown(viewport) {
-  var terminal = viewport.terminal;
+function submit(viewport, transform) {
+  //console.log('submit');
+  //var out = document.getElementById('viewport').childNodes[0].childNodes[0];
+  //var out = document.getElementById('jsconsole');
+  //var out = document.getElementById('view');
+  //var isScrolledToBottom = out.scrollHeight - out.clientHeight <= out.scrollTop + 1;
+  //console.log('scrollHeight: ', out.scrollHeight);
+  //console.log('clientHeight: ', out.clientHeight);
+  //console.log('scrollTop: ', out.scrollTop);
+  //console.log('isScrolledToBottom: ', isScrolledToBottom);
+  //if (isScrolledToBottom) {
+  //  out.scrollTop = out.scrollHeight - out.clientHeight;
+  //}
+  //scrollDown('viewport');
+  //scrollDown('view');
+  //scrollDown('jsconsole');
+  //console.log('now scrollTop: ', out.scrollTop);
+  var frame = viewport.frame;
+  var newTerminal = Terminal.submit(refreshTerminal(viewport), transform);
+  var diff = newTerminal.entries.length - viewport.terminal.entries.length;
   return create(
-    terminal,
-    Frame.scrollDown(viewport.frame, terminal));
+    newTerminal,
+    createFrame(
+      frame.offset + diff,
+      frame.start,
+      0));
 }
 
-function scrollUp(viewport) {
-  var terminal = viewport.terminal;
-  return create(
-    terminal,
-    Frame.scrollUp(viewport.frame, terminal));
+function scrollDown(id) {
+  document.getElementById(id).scrollTop =
+    document.getElementById(id).scrollHeight -
+      document.getElementById(id).clientHeight;
 }
 
+/*
 function submit(viewport, transform) {
   console.log('submit; maximumSize: ', viewport.frame.maximumSize);
   var terminal = refreshTerminal(viewport);
@@ -114,6 +135,7 @@ function submit(viewport, transform) {
     terminal,
     Terminal.submit(terminal, transform));
 }
+*/
 
 module.exports = {
   addChar             : addChar,
@@ -130,7 +152,5 @@ module.exports = {
   moveCursorToStart   : modifyTerminal('moveCursorToStart'),
   resize              : resize,
   rewind              : rewind,
-  scrollDown          : scrollDown,
-  scrollUp            : scrollUp,
   submit              : submit
 };

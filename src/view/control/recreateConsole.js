@@ -16,26 +16,13 @@ function recreateConsole (prefixes, viewport) {
 
   return DIV(
     {
-      style: {
-        'top': '0px',
-        'left': '0px',
-        'right': '0px',
-        'bottom': '0px',
-        'position': 'absolute',
-        'overflow': 'auto'
-      }
+      id: 'view',
+      classes: { 'view': true }
     },
     PRE(
       {
-        classes: { 'jsconsole': true },
-        style: {
-          'margin': '0px',
-          'position': 'relative',
-          'min-height': '100%',
-          'box-sizing': 'border-box',
-          'padding': '10px',
-          'padding-bottom': '10px'
-        }
+        id: 'jsconsole',
+        classes: { 'jsconsole': true }
       },
       components.header,
       entries.slice(frame.start, frame.start + frame.offset).map(renderComponent.bind(null, prefixes)),
