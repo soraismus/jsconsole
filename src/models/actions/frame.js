@@ -23,13 +23,6 @@ function resetPromptIndex(frame) {
     0);
 }
 
-function resize(frame) {
-  return create(
-    frame.offset,
-    frame.start,
-    frame.promptIndex);
-}
-
 function rewind(frame, terminal) {
   return create(
     frame.offset,
@@ -43,6 +36,5 @@ module.exports = {
   clear: clear,
   fastForward: fastForward,
   resetPromptIndex: resetPromptIndex,
-  resize: resize,
   rewind: rewind,
 };

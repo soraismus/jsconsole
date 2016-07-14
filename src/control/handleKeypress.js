@@ -27,12 +27,6 @@ var right     =  39;
 var up        =  38;
 var tab       =   9;
 
-//var viewport = createViewport(
-//  createTerminal([], [], createPrompt('', '')),
-//  createFrame(23, 0, 0, 0));
-//var viewport;
-
-
 function getViewport(event, transform, getCandidates, config) {
   var viewport = config.viewport;
   event.preventDefault();
@@ -84,11 +78,9 @@ function getViewport(event, transform, getCandidates, config) {
 }
 
 function handleKeypress(config) {
-  var nodeId        = config.nodeId;
   var promptLabel   = config.promptLabel;
   var transform     = config.transform;
   var getCandidates = config.getCandidates;
-  //viewport = config.viewport;
   return function (event) {
     var _viewport = getViewport(event, transform, getCandidates, config);
     interpreter.modifyElement(
@@ -96,7 +88,6 @@ function handleKeypress(config) {
       diff(
         recreateConsole({ promptLabel: promptLabel }, _viewport),
         recreateConsole({ promptLabel: promptLabel }, config.viewport)));
-    //viewport = _viewport;
     config.viewport = _viewport;
 
     var x0 = document.getElementById('viewport');

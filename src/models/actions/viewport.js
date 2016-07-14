@@ -33,13 +33,6 @@ function addLineEntries(frame, oldTerminal, newTerminal) {
     start = frame.start;
   }
 
-  var out = document.getElementById('viewport').childNodes[0];
-  var isScrolledToBottom = out.scrollHeight - out.clientHeight < out.scrollTop;
-  console.log('scroll', 'scrollHeight: ', out.scrollHeight, 'clientHeight', out.clientHeight, 'diff',  out.scrollHeight - out.clientHeight, 'scrollTop',  out.scrollTop);
-  if (isScrolledToBottom) {
-    out.scrollTop = out.scrollHeight - out.clientHeight;
-  }
-
   return create(
     newTerminal,
     createFrame(maximumSize, offset, start, frame.promptIndex));
@@ -79,12 +72,6 @@ function refreshTerminal(viewport) {
   return createTerminal(terminal.entries, terminal.prompts, viewport.prompt);
 }
 
-function resize(viewport, height) {
-  return create(
-    viewport.terminal,
-    Frame.resize(viewport.frame, height));
-}
-
 function rewind(viewport) {
   var terminal = viewport.terminal;
   return create(
@@ -93,22 +80,6 @@ function rewind(viewport) {
 }
 
 function submit(viewport, transform) {
-  //console.log('submit');
-  //var out = document.getElementById('viewport').childNodes[0].childNodes[0];
-  //var out = document.getElementById('jsconsole');
-  //var out = document.getElementById('view');
-  //var isScrolledToBottom = out.scrollHeight - out.clientHeight <= out.scrollTop + 1;
-  //console.log('scrollHeight: ', out.scrollHeight);
-  //console.log('clientHeight: ', out.clientHeight);
-  //console.log('scrollTop: ', out.scrollTop);
-  //console.log('isScrolledToBottom: ', isScrolledToBottom);
-  //if (isScrolledToBottom) {
-  //  out.scrollTop = out.scrollHeight - out.clientHeight;
-  //}
-  //scrollDown('viewport');
-  //scrollDown('view');
-  //scrollDown('jsconsole');
-  //console.log('now scrollTop: ', out.scrollTop);
   var frame = viewport.frame;
   var newTerminal = Terminal.submit(refreshTerminal(viewport), transform);
   var diff = newTerminal.entries.length - viewport.terminal.entries.length;
@@ -119,23 +90,6 @@ function submit(viewport, transform) {
       frame.start,
       0));
 }
-
-function scrollDown(id) {
-  document.getElementById(id).scrollTop =
-    document.getElementById(id).scrollHeight -
-      document.getElementById(id).clientHeight;
-}
-
-/*
-function submit(viewport, transform) {
-  console.log('submit; maximumSize: ', viewport.frame.maximumSize);
-  var terminal = refreshTerminal(viewport);
-  return addLineEntries(
-    Frame.resetPromptIndex(viewport.frame),
-    terminal,
-    Terminal.submit(terminal, transform));
-}
-*/
 
 module.exports = {
   addChar             : addChar,
@@ -150,7 +104,6 @@ module.exports = {
   moveCursorRight     : modifyTerminal('moveCursorRight'),
   moveCursorToEnd     : modifyTerminal('moveCursorToEnd'),
   moveCursorToStart   : modifyTerminal('moveCursorToStart'),
-  resize              : resize,
   rewind              : rewind,
   submit              : submit
 };
