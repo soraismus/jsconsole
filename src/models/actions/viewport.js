@@ -10,6 +10,41 @@ function addChar(viewport, char) {
     viewport.frame);
 }
 
+function addLineEntries(frame, oldTerminal, newTerminal) {
+  var offset, start;
+  var newEntries = newTerminal.entries
+  var oldEntries = oldTerminal.entries
+  var diffCount = newEntries.length - oldEntries.length;
+  var maximumSize = frame.maximumSize;
+
+  if (diffCount < 0) {
+    return viewport;
+  }
+
+  if (diffCount === 0) {
+    return create(newTerminal, frame);
+  }
+
+  if (frame.offset + diffCount >= maximumSize) {
+    offset = maximumSize;
+    start = frame.start + ((diffCount + frame.offset) - maximumSize);
+  } else {
+    offset = frame.offset + diffCount;
+    start = frame.start;
+  }
+
+  var out = document.getElementById('viewport').childNodes[0];
+  var isScrolledToBttom = out.scrollHeight - out.clientHeight < out.scrollTop;
+  console.log('scroll', 'scrollHeight: ', out.scrollHeight, 'clientHeight', out.clientHeight, 'diff',  out.scrollHeight - out.clientHeight, 'scrollTop',  out.scrollTop);
+  if (isScrolledToBttom) {
+    out.scrollTop = out.scrollHeight - out.clientHeight;
+  }
+
+  return create(
+    newTerminal,
+    createFrame(maximumSize, offset, start, frame.promptIndex));
+}
+
 function clear(viewport) {
   var terminal = viewport.terminal;
   return create(
@@ -19,7 +54,7 @@ function clear(viewport) {
 
 function completeWord(viewport, getCandidates) {
   var terminal = viewport.terminal;
-  return resize(
+  return addLineEntries(
     viewport.frame, 
     terminal,
     Terminal.completeWord(terminal, getCandidates));
@@ -44,32 +79,10 @@ function refreshTerminal(viewport) {
   return createTerminal(terminal.entries, terminal.prompts, viewport.prompt);
 }
 
-function resize(frame, oldTerminal, newTerminal) {
-  var offset, start;
-  var newEntries = newTerminal.entries
-  var oldEntries = oldTerminal.entries
-  var diffCount = newEntries.length - oldEntries.length;
-  var maximumSize = frame.maximumSize;
-
-  if (diffCount < 0) {
-    return viewport;
-  }
-
-  if (diffCount === 0) {
-    return create(newTerminal, frame);
-  }
-
-  if (frame.offset + diffCount >= maximumSize) {
-    offset = maximumSize;
-    start = frame.start + ((diffCount + frame.offset) - maximumSize);
-  } else {
-    offset = frame.offset + diffCount;
-    start = frame.start;
-  }
-
+function resize(viewport, height) {
   return create(
-    newTerminal,
-    createFrame(maximumSize, offset, start, frame.promptIndex));
+    viewport.terminal,
+    Frame.resize(viewport.frame, height));
 }
 
 function rewind(viewport) {
@@ -94,8 +107,9 @@ function scrollUp(viewport) {
 }
 
 function submit(viewport, transform) {
+  console.log('submit; maximumSize: ', viewport.frame.maximumSize);
   var terminal = refreshTerminal(viewport);
-  return resize(
+  return addLineEntries(
     Frame.resetPromptIndex(viewport.frame),
     terminal,
     Terminal.submit(terminal, transform));
@@ -114,6 +128,7 @@ module.exports = {
   moveCursorRight     : modifyTerminal('moveCursorRight'),
   moveCursorToEnd     : modifyTerminal('moveCursorToEnd'),
   moveCursorToStart   : modifyTerminal('moveCursorToStart'),
+  resize              : resize,
   rewind              : rewind,
   scrollDown          : scrollDown,
   scrollUp            : scrollUp,

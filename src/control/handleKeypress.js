@@ -27,13 +27,14 @@ var right     =  39;
 var up        =  38;
 var tab       =   9;
 
-var viewport = createViewport(
-  createTerminal([], [], createPrompt('', '')),
-  createFrame(23, 0, 0, 0));
+//var viewport = createViewport(
+//  createTerminal([], [], createPrompt('', '')),
+//  createFrame(23, 0, 0, 0));
+//var viewport;
 
-var pane = createPane(viewport);
 
-function getViewport(event, transform, getCandidates) {
+function getViewport(event, transform, getCandidates, config) {
+  var viewport = config.viewport;
   event.preventDefault();
   if (event.ctrlKey) {
     switch (event.charCode) {
@@ -91,25 +92,16 @@ function handleKeypress(config) {
   var promptLabel   = config.promptLabel;
   var transform     = config.transform;
   var getCandidates = config.getCandidates;
+  //viewport = config.viewport;
   return function (event) {
-
-    var c0 = recreateConsole({ promptLabel: promptLabel }, viewport);
-
-    viewport = getViewport(event, transform, getCandidates);
-
-    var c1 = recreateConsole({ promptLabel: promptLabel }, viewport);
-    var patch = diff(c1, c0);
-
+    var _viewport = getViewport(event, transform, getCandidates, config);
     interpreter.modifyElement(
       document.getElementById('viewport').childNodes[0],
-      patch);
-
-
-    //var p0 = pane;
-    //pane = createPane(viewport);
-    //rerender( config.getRoot(), { promptLabel: promptLabel }, viewport);
-
-    
+      diff(
+        recreateConsole({ promptLabel: promptLabel }, _viewport),
+        recreateConsole({ promptLabel: promptLabel }, config.viewport)));
+    //viewport = _viewport;
+    config.viewport = _viewport;
   };
 }
 

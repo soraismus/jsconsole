@@ -26,6 +26,15 @@ function resetPromptIndex(frame) {
     0);
 }
 
+function resize(frame, maximumSize) {
+  console.log('resize; maximumSize: ', maximumSize);
+  return create(
+    maximumSize,
+    frame.offset,
+    frame.start,
+    frame.promptIndex);
+}
+
 function rewind(frame, terminal) {
   return create(
     frame.maximumSize,
@@ -66,6 +75,7 @@ module.exports = {
   clear: clear,
   fastForward: fastForward,
   resetPromptIndex: resetPromptIndex,
+  resize: resize,
   rewind: rewind,
   scrollDown: scrollDown,
   scrollUp: scrollUp,
