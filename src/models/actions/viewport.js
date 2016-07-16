@@ -10,32 +10,17 @@ function addChar(viewport, char) {
     viewport.frame);
 }
 
-function addLineEntries(frame, oldTerminal, newTerminal) {
-  var offset, start;
-  var newEntries = newTerminal.entries
-  var oldEntries = oldTerminal.entries
-  var diffCount = newEntries.length - oldEntries.length;
-  var maximumSize = frame.maximumSize;
-
-  if (diffCount < 0) {
-    return viewport;
-  }
-
-  if (diffCount === 0) {
-    return create(newTerminal, frame);
-  }
-
-  if (frame.offset + diffCount >= maximumSize) {
-    offset = maximumSize;
-    start = frame.start + ((diffCount + frame.offset) - maximumSize);
-  } else {
-    offset = frame.offset + diffCount;
-    start = frame.start;
-  }
-
+function completeWord(viewport, getCandidates) {
+  var frame = viewport.frame;
+  var newTerminal =
+    Terminal.completeWord(refreshTerminal(viewport), getCandidates);
+  var diff = newTerminal.entries.length - viewport.terminal.entries.length;
   return create(
     newTerminal,
-    createFrame(maximumSize, offset, start, frame.promptIndex));
+    createFrame(
+      frame.offset + diff,
+      frame.start,
+      0));
 }
 
 function clear(viewport) {
@@ -43,14 +28,6 @@ function clear(viewport) {
   return create(
     terminal,
     Frame.clear(viewport.frame, terminal));
-}
-
-function completeWord(viewport, getCandidates) {
-  var terminal = viewport.terminal;
-  return addLineEntries(
-    viewport.frame, 
-    terminal,
-    Terminal.completeWord(terminal, getCandidates));
 }
 
 function fastForward(viewport) {

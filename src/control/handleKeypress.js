@@ -1,15 +1,4 @@
-var createFrame    = require('../models/types/createFrame');
-var createPane     = require('../models/types/createPane');
-var createPrompt   = require('../models/types/createPrompt');
-var createTerminal = require('../models/types/createTerminal');
-var createViewport = require('../models/types/createViewport');
-var rerender       = require('../view/control/rerender');
-var Viewport       = require('../models/actions/viewport');
-
-var diff = require('../diff');
-var recreateConsole = require('../view/control/recreateConsole');
-
-var interpreter = require('../../lib/interpreter');
+var Viewport = require('../models/actions/viewport');
 
 var a =  97;
 var e = 101;
@@ -27,75 +16,83 @@ var right     =  39;
 var up        =  38;
 var tab       =   9;
 
-function getViewport(event, transform, getCandidates, config) {
+function getViewport(event, config) {
+  var command;
   var viewport = config.viewport;
+
   event.preventDefault();
+
   if (event.ctrlKey) {
     switch (event.charCode) {
       case a:
-        return Viewport.moveCursorToStart(viewport);
+        command = 'moveCursorToStart';
+        break;
       case e:
-        return Viewport.moveCursorToEnd(viewport);
+        command = 'moveCursorToEnd';
+        break;
       case h:
-        return Viewport.deleteLeftChar(viewport);
+        command = 'deleteLeftChar';
+        break;
       case l:
-        return Viewport.clear(viewport);
+        command = 'clear';
+        break;
       case u:
-        return Viewport.deletePreCursor(viewport);
+        command = 'deletePreCursor';
+        break;
       case w:
-        return Viewport.deleteWord(viewport);
-    }
-    switch (event.keyCode) {
+        command = 'deleteWord';
+        break;
       default:
-        return Viewport.noOp(viewport);
+        return viewport;
     }
+
+    return Viewport[command](viewport);
   }
-  if (event.altKey) {
-    return Viewport.noOp(viewport);
-  }
+
   switch (event.keyCode) {
     case enter:
-      return Viewport.submit(viewport, transform);
+      return Viewport.submit(viewport, config.transform);
     case backspace:
-      return Viewport.deleteLeftChar(viewport);
+      command = 'deleteLeftChar';
+      break;
     case left:
-      return Viewport.moveCursorLeft(viewport);
+      command = 'moveCursorLeft';
+      break;
     case right:
-      return Viewport.moveCursorRight(viewport);
+      command = 'moveCursorRight';
+      break;
     case up:
-      return Viewport.rewind(viewport);
+      command = 'rewind';
+      break;
     case down:
-      return Viewport.fastForward(viewport);
+      command = 'fastForward';
+      break;
     case _delete:
-      return Viewport.deleteRightChar(viewport);
+      command = 'deleteRightChar';
+      break;
     case tab:
-      return Viewport.completeWord(viewport, getCandidates);
+      return Viewport.completeWord(viewport, config.getCandidates);
     default:
       return Viewport.addChar(
         viewport,
         String.fromCharCode(event.charCode));
   }
+
+  return Viewport[command](viewport);
 }
 
-function handleKeypress(config) {
-  var promptLabel   = config.promptLabel;
-  var transform     = config.transform;
-  var getCandidates = config.getCandidates;
+function handleKeypress(rerender, config) {
+  var _config = {
+    getCandidates: config.getCandidates,
+    getViewport: config.getViewport,
+    promptLabel: config.promptLabel,
+    transform: config.transform,
+    viewport: config.viewport
+  };
+  
   return function (event) {
-    var _viewport = getViewport(event, transform, getCandidates, config);
-    interpreter.modifyElement(
-      document.getElementById('viewport').childNodes[0],
-      diff(
-        recreateConsole({ promptLabel: promptLabel }, _viewport),
-        recreateConsole({ promptLabel: promptLabel }, config.viewport)));
-    config.viewport = _viewport;
-
-    var x0 = document.getElementById('viewport');
-    var x1 = document.getElementById('view');
-    var x2 = document.getElementById('jsconsole');
-    scrollDown(x0);
-    scrollDown(x1);
-    scrollDown(x2);
+    rerender(getViewport(event, _config), _config);
+    scrollDown(_config.getViewport());
   };
 }
 
