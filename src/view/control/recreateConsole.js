@@ -1,18 +1,19 @@
-var components = require('../components/components');
-var elements   = require('../../../lib/elements');
-var DIV        = elements.DIV;
-var PRE        = elements.PRE;
+var components           = require('../components/components');
+var createPrompt         = components.createPrompt;
+var createOldPrompt      = components.createOldPrompt;
+var createOldPromptReply = components.createOldPromptReply;
+var elements             = require('../../../lib/elements');
+var DIV                  = elements.DIV;
+var PRE                  = elements.PRE;
 
 function recreateConsole (prefixes, viewport) {
-  var entries = viewport.terminal.entries;
+  var promptLabel = prefixes.promptLabel;
   var prompt = viewport.prompt;
   var frame = viewport.frame;
 
-  var completionLabel = prefixes.completionLabel;
-  var displayLabel = prefixes.displayLabel;
-  var errorLabel = prefixes.errorLabel;
-  var promptLabel = prefixes.promptLabel;
-  var responseLabel = prefixes.responseLabel;
+  var entries = viewport.terminal.entries
+    .slice(frame.start, frame.start + frame.offset)
+    .map(renderComponent.bind(null, prefixes));
 
   return DIV(
     {
@@ -25,8 +26,8 @@ function recreateConsole (prefixes, viewport) {
         classes: { 'jsconsole': true }
       },
       components.header,
-      entries.slice(frame.start, frame.start + frame.offset).map(renderComponent.bind(null, prefixes)),
-      components.createPrompt(
+      entries,
+      createPrompt(
         promptLabel,
         prompt.preCursor,
         prompt.postCursor)));
@@ -36,15 +37,15 @@ function renderComponent(prefixes, component) {
   var promptLabel = prefixes.promptLabel;
   switch (component.type) {
     case 'command':
-      return components.createOldPrompt(promptLabel + component.value);
+      return createOldPrompt(promptLabel + component.value);
     case 'response':
-      return components.createOldPromptReply(component.value);
+      return createOldPromptReply(component.value);
     case 'display':
-      return components.createOldPrompt(component.value);
+      return createOldPrompt(component.value);
     case 'completion':
-      return components.createOldPrompt('  ' + component.value);
+      return createOldPrompt('  ' + component.value);
     case 'error':
-      return components.createOldPrompt('...> ' + component.value);
+      return createOldPrompt('...> ' + component.value);
     default:
       throw new Error('invalid component type');
   }

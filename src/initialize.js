@@ -1,18 +1,7 @@
-var createFrame       = require('./models/types/createFrame');
-var createPrompt      = require('./models/types/createPrompt');
-var createTerminal    = require('./models/types/createTerminal');
-var createViewport    = require('./models/types/createViewport');
-var diff              = require('./diff');
+var getInitialModel   = require('./models/getInitialModel');
 var initializeControl = require('./control/initializeControl');
 var initializeView    = require('./view/initializeView');
-var interpreter       = require('./../lib/interpreter');
-var recreateConsole   = require('./view/control/recreateConsole');
-
-function getInitialModel() {
-  return createViewport(
-    createTerminal([], [], createPrompt('', '')),
-    createFrame(0, 0, 0));
-}
+var rerender          = require('./view/control/rerender');
 
 function initialize(config) {
   var getCandidates = config.getCandidates;
@@ -24,9 +13,18 @@ function initialize(config) {
     return document.getElementById(nodeId);
   };
 
+  var viewConfig = {
+    promptLabel: promptLabel,
+    getRoot: getRoot
+  };
+
+  initializeView(viewConfig);
+
   var controlConfig = {
     getCandidates: getCandidates,
-    getRoot: getRoot,
+    getCursor: function () {
+      return getRoot().getElementsByClassName('jsconsole-cursor')[0];
+    },
     getViewport: function () {
       return getRoot().childNodes[0];
     },
@@ -35,27 +33,20 @@ function initialize(config) {
     viewport: getInitialModel()
   };
 
-  var viewConfig = {
-    promptLabel: promptLabel,
-    getRoot: getRoot
-  };
+  var _rerender = rerender(promptLabel, controlConfig);
 
-  initializeView(viewConfig);
-  initializeControl(subscribe, rerender, controlConfig);
-}
-
-function rerender(_viewport, config) {
-  var promptLabel = { promptLabel: config.promptLabel };
-  interpreter.modifyElement(
-    config.getViewport(),
-    diff(
-      recreateConsole(promptLabel, _viewport),
-      recreateConsole(promptLabel, config.viewport)));
-  config.viewport = _viewport;
+  initializeControl(subscribe, _rerender, controlConfig);
 }
 
 function subscribe(eventType, eventHandler) {
-  window.addEventListener(eventType, eventHandler);
+  window.addEventListener(eventType, supressDefault(eventHandler));
+}
+
+function supressDefault(handleEvent) {
+  return function (event) {
+    event.preventDefault();
+    handleEvent(event);
+  };
 }
 
 module.exports = initialize;

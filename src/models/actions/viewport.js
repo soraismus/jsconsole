@@ -1,13 +1,37 @@
 var create         = require('../types/createViewport');
 var createFrame    = require('../types/createFrame');
+var createScroll   = require('../types/createScroll');
 var createTerminal = require('../types/createTerminal');
 var Frame          = require('./frame');
 var Terminal       = require('./terminal');
 
+var compelDown = { compel: true, origin: false };
+
+var compelLeft = createScroll({
+  horizontal: { compel: true, origin: true },
+  vertical: compelDown
+});
+
+var compelRight = createScroll({
+  horizontal: { compel: true, origin: false },
+  vertical: compelDown
+});
+
+var preferRight = createScroll({
+  horizontal: { compel: false, origin: false },
+  vertical: compelDown
+});
+
+var noScroll = createScroll({
+  horizontal: false,
+  vertical: compelDown
+});
+
 function addChar(viewport, char) {
   return create(
     Terminal.addChar(viewport.terminal, char),
-    viewport.frame);
+    viewport.frame,
+    preferRight);
 }
 
 function completeWord(viewport, getCandidates) {
@@ -20,27 +44,31 @@ function completeWord(viewport, getCandidates) {
     createFrame(
       frame.offset + diff,
       frame.start,
-      0));
+      0),
+    preferRight);
 }
 
 function clear(viewport) {
   var terminal = viewport.terminal;
   return create(
     terminal,
-    Frame.clear(viewport.frame, terminal));
+    Frame.clear(viewport.frame, terminal),
+    preferRight);
 }
 
 function fastForward(viewport) {
   return create(
     viewport.terminal,
-    Frame.fastForward(viewport.frame));
+    Frame.fastForward(viewport.frame),
+    preferRight);
 }
 
 function modifyTerminal(fnName) {
   return function (viewport) {
     return create(
       Terminal[fnName](refreshTerminal(viewport)),
-      Frame.resetPromptIndex(viewport.frame));
+      Frame.resetPromptIndex(viewport.frame),
+      preferRight);
   };
 }
 
@@ -53,7 +81,8 @@ function rewind(viewport) {
   var terminal = viewport.terminal;
   return create(
     terminal,
-    Frame.rewind(viewport.frame, terminal));
+    Frame.rewind(viewport.frame, terminal),
+    preferRight);
 }
 
 function submit(viewport, transform) {
@@ -65,7 +94,8 @@ function submit(viewport, transform) {
     createFrame(
       frame.offset + diff,
       frame.start,
-      0));
+      0),
+    compelLeft);
 }
 
 module.exports = {

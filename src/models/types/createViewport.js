@@ -4,10 +4,11 @@ function getPrompt(terminal, frame) {
     : terminal.prompts[frame.promptIndex - 1];
 }
 
-module.exports = function (terminal, frame) {
+module.exports = function (terminal, frame, scroll) {
   return {
     terminal: terminal,
     frame: frame,
-    prompt: getPrompt(terminal, frame)
+    prompt: getPrompt(terminal, frame),
+    scroll: scroll
   };
 };
