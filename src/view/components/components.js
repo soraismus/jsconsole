@@ -68,6 +68,7 @@ function createPrompt(promptLabel, preCursor, postCursor) {
 
 var cursor = SPAN(
   {
+    id: 'cursor',
     classes: _cursor,
     style: {
       'background-color': '#999',
@@ -83,7 +84,7 @@ var emptySpan = SPAN(null, emptyString);
 
 var header = SPAN(
     { classes: _header },
-    SPAN({ style: { 'color': '#0ff' }}, 'Welcome to MHLisp Console!\n'));
+    SPAN({ style: { 'color': '#0ff' }}, 'Welcome to Lisp Console.\n'));
 
 var postCursor = SPAN({
   classes: promptTextPostCursor,

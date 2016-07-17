@@ -1,7 +1,17 @@
 var getInitialModel   = require('./models/getInitialModel');
 var initializeControl = require('./control/initializeControl');
 var initializeView    = require('./view/initializeView');
-var rerender          = require('./view/control/rerender');
+
+var diff            = require('./view/control/diff');
+var modifyElement   = require('./../lib/interpreter').modifyElement;
+var recreateConsole = require('./view/control/recreateConsole');
+
+var createConsole          = require('./view/components/createConsole');
+
+function getCursorOffset(cursor, viewport) {
+  var margin = 5;
+  return cursor.offsetLeft + cursor.offsetWidth + margin - viewport.offsetWidth;
+}
 
 function initialize(config) {
   var getCandidates = config.getCandidates;
@@ -9,33 +19,41 @@ function initialize(config) {
   var promptLabel = config.promptLabel;
   var transform = config.transform;
 
-  var getRoot = function () {
-    return document.getElementById(nodeId);
-  };
+  var root = document.getElementById(nodeId);
+  var viewModel = createConsole(promptLabel);
 
-  var viewConfig = {
-    promptLabel: promptLabel,
-    getRoot: getRoot
-  };
+  initializeView(root, viewModel);
 
-  initializeView(viewConfig);
+  // ----------------------------------------------------------------------
+  var rootChild = root.childNodes[0];
+
+  var getCursor = function () {
+    return root.getElementsByClassName('jsconsole-cursor')[0];
+  };
 
   var controlConfig = {
     getCandidates: getCandidates,
-    getCursor: function () {
-      return getRoot().getElementsByClassName('jsconsole-cursor')[0];
-    },
-    getViewport: function () {
-      return getRoot().childNodes[0];
-    },
     promptLabel: promptLabel,
     transform: transform,
     viewport: getInitialModel()
   };
 
-  var _rerender = rerender(promptLabel, controlConfig);
+  var render = function (model) {
+    var _promptLabel = { promptLabel: promptLabel };
+    var newViewModel = recreateConsole(_promptLabel, model);
+    modifyElement(rootChild, diff(newViewModel, viewModel));
+    scroll(rootChild, getCursorOffset(getCursor(), rootChild));
+    controlConfig.viewport = model;
+    viewModel = newViewModel;
+  };
 
-  initializeControl(subscribe, _rerender, controlConfig);
+  initializeControl(subscribe, render, controlConfig);
+  // ----------------------------------------------------------------------
+}
+
+function scroll(node, cursorOffset) {
+  node.scrollTop = node.scrollHeight - node.clientHeight;
+  node.scrollLeft = cursorOffset;
 }
 
 function subscribe(eventType, eventHandler) {

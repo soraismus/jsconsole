@@ -1,37 +1,13 @@
 var create         = require('../types/createViewport');
 var createFrame    = require('../types/createFrame');
-var createScroll   = require('../types/createScroll');
 var createTerminal = require('../types/createTerminal');
 var Frame          = require('./frame');
 var Terminal       = require('./terminal');
 
-var compelDown = { compel: true, origin: false };
-
-var compelLeft = createScroll({
-  horizontal: { compel: true, origin: true },
-  vertical: compelDown
-});
-
-var compelRight = createScroll({
-  horizontal: { compel: true, origin: false },
-  vertical: compelDown
-});
-
-var preferRight = createScroll({
-  horizontal: { compel: false, origin: false },
-  vertical: compelDown
-});
-
-var noScroll = createScroll({
-  horizontal: false,
-  vertical: compelDown
-});
-
 function addChar(viewport, char) {
   return create(
     Terminal.addChar(viewport.terminal, char),
-    viewport.frame,
-    preferRight);
+    viewport.frame);
 }
 
 function completeWord(viewport, getCandidates) {
@@ -44,31 +20,27 @@ function completeWord(viewport, getCandidates) {
     createFrame(
       frame.offset + diff,
       frame.start,
-      0),
-    preferRight);
+      0));
 }
 
 function clear(viewport) {
   var terminal = viewport.terminal;
   return create(
     terminal,
-    Frame.clear(viewport.frame, terminal),
-    preferRight);
+    Frame.clear(viewport.frame, terminal));
 }
 
 function fastForward(viewport) {
   return create(
     viewport.terminal,
-    Frame.fastForward(viewport.frame),
-    preferRight);
+    Frame.fastForward(viewport.frame));
 }
 
 function modifyTerminal(fnName) {
   return function (viewport) {
     return create(
       Terminal[fnName](refreshTerminal(viewport)),
-      Frame.resetPromptIndex(viewport.frame),
-      preferRight);
+      Frame.resetPromptIndex(viewport.frame));
   };
 }
 
@@ -81,8 +53,7 @@ function rewind(viewport) {
   var terminal = viewport.terminal;
   return create(
     terminal,
-    Frame.rewind(viewport.frame, terminal),
-    preferRight);
+    Frame.rewind(viewport.frame, terminal));
 }
 
 function submit(viewport, transform) {
@@ -94,8 +65,7 @@ function submit(viewport, transform) {
     createFrame(
       frame.offset + diff,
       frame.start,
-      0),
-    compelLeft);
+      0));
 }
 
 module.exports = {
