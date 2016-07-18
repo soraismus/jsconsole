@@ -28,40 +28,46 @@ var _prompt = {
   'jsconsole-prompt': true
 };
 
+var _1 = { classes: display, style: { 'font-weight': 'normal' }};
 function createDisplay(text) {
   return SPAN(
-    { classes: display, style: { 'font-weight': 'normal' }},
+    _1,
     SPAN(null, text + '\n'));
 }
 
+var _2 = { classes: oldPrompt, style: { 'font-weight': 'normal' }};
 function createOldPrompt(text) {
   return SPAN(
-    { classes: oldPrompt, style: { 'font-weight': 'normal' }},
+    _2,
     SPAN(null, text + '\n'));
 }
 
+var _3 = { classes: oldPromptResponse };
 function createOldPromptReply(text) {
   return SPAN(
-    { classes: oldPromptResponse },
+    _3,
     SPAN(null, '==> ' + text + '\n'));
 }
 
+var _4 = { classes: _prompt, style: { 'color': '#0d0' }};
+var _5 = { classes: promptText };
+var _6 = {
+  classes: promptTextPostCursor,
+  style: { 'position': 'relative' }
+};
 function createPrompt(promptLabel, preCursor, postCursor) {
   preCursor = preCursor != null ? preCursor : '';
   postCursor = postCursor != null ? postCursor : '';
   return SPAN(
-    { classes: _prompt, style: { 'color': '#0d0' }},
+    _4,
     emptySpan,
     SPAN(
       null,
       SPAN(null, promptLabel),
-      SPAN({ classes: promptText }, preCursor),
+      SPAN(_5, preCursor),
       cursor,
       SPAN(
-        {
-          classes: promptTextPostCursor,
-          style: { 'position': 'relative' }
-        },
+        _6,
         postCursor)),
     emptySpan);
 }

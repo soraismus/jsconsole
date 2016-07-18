@@ -158,12 +158,17 @@ function submit(terminal, transform) {
     .slice(0, -1)
     .filter(function (result) { return result.effect.type === 'display'; })
     .map(function (display) { return { type: 'display', value: display.value }});
-  var response = { type: 'response', value: results[results.length - 1].value };
+
+  var lastResult = results[results.length - 1];
+  var response = lastResult.value != null
+    ? [{ type: 'response', value: lastResult.value }]
+    : [];
+
   var command = { type: 'command', value: commandText };
   var prompt = normalizePrompt(terminal.prompt);
 
   return create(
-    terminal.entries.concat([command], displayEntries, [response]),
+    terminal.entries.concat([command], displayEntries, response),
     [prompt].concat(terminal.prompts),
     createPrompt('', ''));
 }
@@ -171,7 +176,7 @@ function submit(terminal, transform) {
 module.exports = {
   addChar: addChar,
   completeWord: completeWord,
-  deleteLeftChar, deleteLeftChar,
+  deleteLeftChar: deleteLeftChar,
   deletePreCursor: deletePreCursor,
   deleteRightChar: deleteRightChar,
   deleteWord: deleteWord,
