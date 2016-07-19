@@ -1,5 +1,3 @@
-var property = 'key'; 
-
 var a = 'a';
 var e = 'e';
 var h = 'h';
@@ -37,8 +35,8 @@ var characters = [
   '{', '}', '|',  ':', '"',  '<', '>', '?'
 ];
 
-function interpretKey(event) {
-  var value = event[property];
+function getAction(event) {
+  var value = event.value;
 
   if (event.ctrlKey) {
     switch (value) {
@@ -100,4 +98,4 @@ function wrap(actionName) {
   return { name: actionName };
 }
 
-module.exports = interpretKey;
+module.exports = getAction;
