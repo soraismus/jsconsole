@@ -35,10 +35,10 @@ var characters = [
   '{', '}', '|',  ':', '"',  '<', '>', '?'
 ];
 
-function getAction(event) {
-  var value = event.value;
+function getAction(keyChord) {
+  var value = keyChord.value;
 
-  if (event.ctrlKey) {
+  if (keyChord.ctrlKey) {
     switch (value) {
       case a:
       case A:

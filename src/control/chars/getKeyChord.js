@@ -1,10 +1,10 @@
-var getAction           = require('./interpretKey');
 var keyCodeCharts       = require('./keyCodeCharts');
 var keyIdentifierCharts = require('./keyIdentifierCharts');
 
-function getEvent(kind, event) {
+function getEventProxy(kind, event) {
   return {
     value: event[kind],
+    altKey: event.altKey,
     ctrlKey: event.ctrlKey,
     shiftKey: event.shiftKey
   };
@@ -14,37 +14,38 @@ function identity(event) {
   return event;
 }
 
-function interpretKeyboardEvent(event) {
-  var _normalize;
+function getKeyChord(event) {
+  var normalize;
   var property;
 
   if (event.key != null) {
     property = 'key';
-    _normalize = identity;
+    normalize = identity;
   } else if (event.keyIdentifier != null) {
     property = 'keyIdentifier';
-    _normalize = normalize(keyIdentifierCharts);
+    normalize = _getKeyChord(keyIdentifierCharts);
   } else {
     property = 'keyCode';
-    _normalize = normalize(keyCodeCharts);
+    normalize = _getKeyChord(keyCodeCharts);
   }
 
-  return getAction(_normalize(getEvent(property, event)));
+  return normalize(getEventProxy(property, event));
 }
 
-function normalize(conversionCharts) {
+function _getKeyChord(conversionCharts) {
   return function (event) {
     return {
-      value: normalizeValue(conversionCharts, event.value, event.shiftKey),
+      value: getKeyChordValue(conversionCharts, event.value, event.shiftKey),
+      altKey: event.altKey,
       ctrlKey: event.ctrlKey,
       shiftKey: event.shiftKey
     };
   };
 }
 
-function normalizeValue(conversionCharts, value, shiftKey) {
+function getKeyChordValue(conversionCharts, value, shiftKey) {
   var key = shiftKey ? 'withShift' : 'withoutShift';
   return conversionCharts[key][value];
 }
 
-module.exports = interpretKeyboardEvent;
+module.exports = getKeyChord;
