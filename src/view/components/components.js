@@ -1,81 +1,47 @@
 var SPAN = require('../../../lib/elements').SPAN;
 
-var emptyString = '';
-
-var space = ' ';
-
-var _cursor = { 'jsconsole-cursor': true };
-var _header = { 'jsconsole-header': true };
-var promptText = { 'jsconsole-prompt-text': true };
-var promptTextPostCursor = { 'jsconsole-prompt-text-post-cursor': true };
-
-var display = {
-  'jsconsole-display': true,
-  'jsconsole-line-item': true
-};
-
-var oldPrompt = {
-  'jsconsole-old-prompt': true,
-  'jsconsole-line-item': true
-};
-
-var oldPromptResponse = {
-  'jsconsole-old-prompt-response': true,
-  'jsconsole-line-item': true
-};
-
-var _prompt = {
-  'jsconsole-prompt': true
-};
-
-var _1 = { classes: display, style: { 'font-weight': 'normal' }};
-function createDisplay(text) {
+function ERL_ENTRY(text) {
   return SPAN(
-    _1,
-    SPAN(null, text + '\n'));
+    _entryConfig,
+    SPAN(null, text + newline));
 }
 
-var _2 = { classes: oldPrompt, style: { 'font-weight': 'normal' }};
-function createOldPrompt(text) {
+function ERL_INPUT(prompt, preCursor, postCursor) {
+  preCursor = preCursor != null ? preCursor : emptyString;
+  postCursor = postCursor != null ? postCursor : emptyString;
   return SPAN(
-    _2,
-    SPAN(null, text + '\n'));
-}
-
-var _3 = { classes: oldPromptResponse };
-function createOldPromptReply(text) {
-  return SPAN(
-    _3,
-    SPAN(null, '==> ' + text + '\n'));
-}
-
-var _4 = { classes: _prompt, style: { 'color': '#0d0' }};
-var _5 = { classes: promptText };
-var _6 = {
-  classes: promptTextPostCursor,
-  style: { 'position': 'relative' }
-};
-function createPrompt(promptLabel, preCursor, postCursor) {
-  preCursor = preCursor != null ? preCursor : '';
-  postCursor = postCursor != null ? postCursor : '';
-  return SPAN(
-    _4,
+    _inputConfig,
     emptySpan,
     SPAN(
       null,
-      SPAN(null, promptLabel),
-      SPAN(_5, preCursor),
-      cursor,
-      SPAN(
-        _6,
-        postCursor)),
+      ERL_PROMPT(prompt),
+      ERL_PRE(preCursor),
+      ERL_CURSOR,
+      ERL_POST(postCursor)),
     emptySpan);
 }
 
-var cursor = SPAN(
+function ERL_POST(text) {
+  return SPAN(_postConfig, text);
+}
+
+function ERL_PRE(text) {
+  return SPAN(_preConfig, text);
+}
+
+function ERL_PROMPT(text) {
+  return SPAN(_promptConfig, text);
+}
+
+var emptyString = '';
+var newline = '\n';
+var space = ' ';
+
+var emptySpan = SPAN(null, emptyString);
+
+var ERL_CURSOR = SPAN(
   {
-    id: 'cursor',
-    classes: _cursor,
+    id: 'erl-cursor',
     style: {
       'background-color': '#999',
       'color': 'transparent',
@@ -86,21 +52,29 @@ var cursor = SPAN(
   },
   space);
 
-var emptySpan = SPAN(null, emptyString);
+var ERL_HEADER = SPAN(
+    {
+      id: 'erl-header',
+    },
+    SPAN(
+      {
+        id: 'erl-banner',
+        style: { 'color': '#0ff' }
+      },
+      'Welcome to ErlKing Lisp Console.\n'));
 
-var header = SPAN(
-    { classes: _header },
-    SPAN({ style: { 'color': '#0ff' }}, 'Welcome to Lisp Console.\n'));
+var _entryConfig = {
+  classes: { 'erl-line': true },
+  style: { 'font-weight': 'normal' }
+};
 
-var postCursor = SPAN({
-  classes: promptTextPostCursor,
-  style: { 'position': 'relative' }
-});
+var _inputConfig = { id: 'erl-input', style: { 'color': '#0d0' }};
+var _postConfig = { id: 'erl-post', style: { 'position': 'relative' }};
+var _preConfig = { id: 'erl-pre' };
+var _promptConfig = { id: 'erl-prompt' };
 
 module.exports = {
-  createDisplay: createDisplay,
-  createOldPrompt: createOldPrompt,
-  createOldPromptReply: createOldPromptReply,
-  createPrompt: createPrompt,
-  header: header,
+  ERL_ENTRY: ERL_ENTRY,
+  ERL_INPUT: ERL_INPUT,
+  ERL_HEADER: ERL_HEADER,
 };

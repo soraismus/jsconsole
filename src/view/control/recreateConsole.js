@@ -1,54 +1,55 @@
-var components           = require('../components/components');
-var createPrompt         = components.createPrompt;
-var createOldPrompt      = components.createOldPrompt;
-var createOldPromptReply = components.createOldPromptReply;
-var elements             = require('../../../lib/elements');
-var DIV                  = elements.DIV;
-var PRE                  = elements.PRE;
+var components = require('../components/components');
+var ERL_ENTRY  = components.ERL_ENTRY;
+var ERL_HEADER = components.ERL_HEADER;
+var ERL_INPUT  = components.ERL_INPUT;
+var elements   = require('../../../lib/elements');
+var DIV        = elements.DIV;
+var PRE        = elements.PRE;
 
-function recreateConsole (prefixes, viewport) {
+function ERLKING(prefixes, viewport) {
   var promptLabel = prefixes.promptLabel;
   var prompt = viewport.prompt;
   var frame = viewport.frame;
 
   var entries = viewport.terminal.entries
     .slice(frame.start, frame.start + frame.offset)
-    .map(renderComponent.bind(null, prefixes));
+    .map(specifyEntry.bind(null, prefixes));
 
   return DIV(
-    {
-      id: 'view',
-      classes: { 'view': true }
-    },
+    _erlkonigConfig,
     PRE(
-      {
-        id: 'jsconsole',
-        classes: { 'jsconsole': true }
-      },
-      components.header,
+      _consoleConfig,
+      ERL_HEADER,
       entries,
-      createPrompt(
+      ERL_INPUT(
         promptLabel,
         prompt.preCursor,
         prompt.postCursor)));
 }
 
-function renderComponent(prefixes, component) {
+function specifyEntry(prefixes, component) {
+  var completionLabel = '  ';
+  var displayLabel = '';
+  var errorLabel = '...> ';
   var promptLabel = prefixes.promptLabel;
+  var responseLabel = '==> ';
   switch (component.type) {
     case 'command':
-      return createOldPrompt(promptLabel + component.value);
+      return ERL_ENTRY(promptLabel + component.value);
     case 'response':
-      return createOldPromptReply(component.value);
+      return ERL_ENTRY(responseLabel + component.value);
     case 'display':
-      return createOldPrompt(component.value);
+      return ERL_ENTRY(displayLabel + component.value);
     case 'completion':
-      return createOldPrompt('  ' + component.value);
+      return ERL_ENTRY(completionLabel + component.value);
     case 'error':
-      return createOldPrompt('...> ' + component.value);
+      return ERL_ENTRY(errorLabel + component.value);
     default:
       throw new Error('invalid component type');
   }
 }
 
-module.exports = recreateConsole;
+var _erlkingConfig = { id: 'erlking' };
+var _consoleConfig = { id: 'erl-console' };
+
+module.exports = ERLKING;
