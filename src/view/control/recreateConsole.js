@@ -1,36 +1,15 @@
 var components = require('../components/components');
-var ERL_ENTRY  = components.ERL_ENTRY;
-//var ERL_HEADER = components.ERL_HEADER;
-//var ERL_INPUT  = components.ERL_INPUT;
-var ERL_PROMPT = components.ERL_PROMPT;
-var ERL_PRE    = components.ERL_PRE;
-var ERL_POST   = components.ERL_POST;
 var ERL_CURSOR = components.ERL_CURSOR;
+var ERL_ENTRY  = components.ERL_ENTRY;
+var ERL_POST   = components.ERL_POST;
+var ERL_PRE    = components.ERL_PRE;
+var ERL_PROMPT = components.ERL_PROMPT;
+
 var elements   = require('../../../lib/elements');
 var DIV        = elements.DIV;
-var PRE        = elements.PRE;
 var SECTION    = elements.SECTION;
 
-/*
-function ERLKING(prefixes, viewport) {
-  var promptLabel = prefixes.promptLabel;
-  var prompt = viewport.prompt;
-  var frame = viewport.frame;
-  var entries = viewport.terminal.entries
-    .slice(frame.start, frame.start + frame.offset)
-    .map(specifyEntry.bind(null, prefixes));
-  return DIV(
-    _erlkingConfig,
-    PRE(
-      _consoleConfig,
-      entries,
-      ERL_INPUT(
-        promptLabel,
-        prompt.preCursor,
-        prompt.postCursor)));
-}
-*/
-
+var emptyString = '';
 function ERLKING(prefixes, viewport) {
   var promptLabel = prefixes.promptLabel;
   var prompt = viewport.prompt;
@@ -39,6 +18,9 @@ function ERLKING(prefixes, viewport) {
   var entries = viewport.terminal.entries
     .slice(frame.start, frame.start + frame.offset)
     .map(specifyEntry.bind(null, prefixes));
+
+  var preCursor = prompt.preCursor != null ? prompt.preCursor : emptyString;
+  var postCursor = prompt.postCursor != null ? prompt.postCursor : emptyString;
 
   return SECTION(
     _erlkingConfig,
@@ -47,7 +29,7 @@ function ERLKING(prefixes, viewport) {
       SECTION(
         _terminalConfig,
         DIV(
-          _terminalViewportConfig,
+          _erlViewportConfig,
           entries,
           ERL_PROMPT(promptLabel),
           ERL_PRE(prompt.preCursor),
@@ -83,6 +65,6 @@ var _erlkingConfig = {
 };
 var _consoleConfig = { id: 'erl-console' };
 var _terminalConfig = { classes: { 'terminal': true }};
-var _terminalViewportConfig = { classes: { 'terminal-viewport': true }};
+var _erlViewportConfig = { classes: { 'erl-viewport': true }};
 
 module.exports = ERLKING;
