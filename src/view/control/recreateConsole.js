@@ -51,7 +51,8 @@ function ERLKING(prefixes, viewport) {
           entries,
           ERL_PROMPT(promptLabel),
           ERL_PRE(prompt.preCursor),
-          ERL_CURSOR))));
+          ERL_CURSOR,
+          ERL_POST(prompt.postCursor)))));
 }
 
 function specifyEntry(prefixes, component) {

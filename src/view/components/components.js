@@ -39,6 +39,7 @@ function ERL_PROMPT(text) {
 var emptyString = '';
 var newline = '\n';
 var space = ' ';
+var underscore = '_';
 
 var emptySpan = SPAN(null, emptyString);
 
@@ -62,7 +63,7 @@ var ERL_CURSOR = SPAN(
     id: 'erl-cursor',
     classes: { 'erl-cursor': true, 'terminal-cursor': true },
   },
-  space);
+  underscore);
 
 /*
 var ERL_HEADER = SPAN(
