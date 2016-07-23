@@ -1,6 +1,6 @@
 var components = require('../components/components');
 var ERL_CURSOR = components.ERL_CURSOR;
-var ERL_ENTRY  = components.ERL_ENTRY;
+var ERL_LINE  = components.ERL_LINE;
 var ERL_POST   = components.ERL_POST;
 var ERL_PRE    = components.ERL_PRE;
 var ERL_PROMPT = components.ERL_PROMPT;
@@ -8,6 +8,14 @@ var ERL_PROMPT = components.ERL_PROMPT;
 var elements   = require('../../../lib/elements');
 var DIV        = elements.DIV;
 var SECTION    = elements.SECTION;
+var H1         = elements.H1;
+
+var ERL_HEADER = SECTION(
+    {
+      id: 'erl-header',
+      classes: { 'head': true }
+    },
+    H1(null, 'Welcome to ErlKing Lisp Console.\n'));
 
 var emptyString = '';
 function ERLKING(prefixes, viewport) {
@@ -15,9 +23,9 @@ function ERLKING(prefixes, viewport) {
   var prompt = viewport.prompt;
   var frame = viewport.frame;
 
-  var entries = viewport.terminal.entries
+  var lines = viewport.terminal.entries
     .slice(frame.start, frame.start + frame.offset)
-    .map(specifyEntry.bind(null, prefixes));
+    .map(specifyLine.bind(null, prefixes));
 
   var preCursor = prompt.preCursor != null ? prompt.preCursor : emptyString;
   var postCursor = prompt.postCursor != null ? prompt.postCursor : emptyString;
@@ -26,18 +34,19 @@ function ERLKING(prefixes, viewport) {
     _erlkingConfig,
     DIV(
       null,
+      ERL_HEADER,
       SECTION(
         _terminalConfig,
         DIV(
           _erlViewportConfig,
-          entries,
+          lines,
           ERL_PROMPT(promptLabel),
           ERL_PRE(prompt.preCursor),
           ERL_CURSOR,
           ERL_POST(prompt.postCursor)))));
 }
 
-function specifyEntry(prefixes, component) {
+function specifyLine(prefixes, component) {
   var completionLabel = '  ';
   var displayLabel = '';
   var errorLabel = '...> ';
@@ -45,15 +54,15 @@ function specifyEntry(prefixes, component) {
   var responseLabel = '==> ';
   switch (component.type) {
     case 'command':
-      return ERL_ENTRY(promptLabel + component.value);
+      return ERL_LINE(promptLabel + component.value);
     case 'response':
-      return ERL_ENTRY(responseLabel + component.value);
+      return ERL_LINE(responseLabel + component.value);
     case 'display':
-      return ERL_ENTRY(displayLabel + component.value);
+      return ERL_LINE(displayLabel + component.value);
     case 'completion':
-      return ERL_ENTRY(completionLabel + component.value);
+      return ERL_LINE(completionLabel + component.value);
     case 'error':
-      return ERL_ENTRY(errorLabel + component.value);
+      return ERL_LINE(errorLabel + component.value);
     default:
       throw new Error('invalid component type');
   }

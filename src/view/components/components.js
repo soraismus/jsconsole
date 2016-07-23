@@ -1,17 +1,8 @@
-/*
-var ERL_HEADER = SPAN(
-    { id: 'erl-header', },
-    SPAN(
-      { id: 'erl-banner', style: { 'color': '#0ff' }
-      },
-      'Welcome to ErlKing Lisp Console.\n'));
-*/
-
 var PRE  = require('../../../lib/elements').PRE;
 var SPAN = require('../../../lib/elements').SPAN;
 
-function ERL_ENTRY(text) {
-  return PRE(_entryConfig, text + newline);
+function ERL_LINE(text) {
+  return PRE(_lineConfig, text + newline);
 }
 
 function ERL_POST(text) {
@@ -31,8 +22,6 @@ var newline = '\n';
 var space = ' ';
 var underscore = '_';
 
-var emptySpan = SPAN(null, emptyString);
-
 var ERL_CURSOR = SPAN(
   {
     id: 'erl-cursor',
@@ -40,8 +29,8 @@ var ERL_CURSOR = SPAN(
   },
   underscore);
 
-var _entryConfig = {
-  classes: { 'erl-line': true, 'erl-line': true },
+var _lineConfig = {
+  classes: { 'erl-line': true },
 };
 
 var _postConfig = {
@@ -52,7 +41,7 @@ var _postConfig = {
 
 var _preConfig = {
    id: 'erl-pre',
-   classes: { 'erl-pre': true, 'erl-input': true }
+   classes: { 'erl-pre': true }
 };
 
 var _promptConfig = {
@@ -62,7 +51,7 @@ var _promptConfig = {
 
 module.exports = {
   ERL_CURSOR : ERL_CURSOR,
-  ERL_ENTRY  : ERL_ENTRY,
+  ERL_LINE   : ERL_LINE,
   ERL_POST   : ERL_POST,
   ERL_PRE    : ERL_PRE,
   ERL_PROMPT : ERL_PROMPT
