@@ -1,5 +1,6 @@
 var components = require('../components/components');
 var ERL_CURSOR = components.ERL_CURSOR;
+var ERL_INPUT  = components.ERL_INPUT;
 var ERL_LINE   = components.ERL_LINE;
 var ERL_POST   = components.ERL_POST;
 var ERL_PRE    = components.ERL_PRE;
@@ -8,6 +9,7 @@ var ERL_PROMPT = components.ERL_PROMPT;
 var elements   = require('../../../lib/elements');
 var DIV        = elements.DIV;
 var SECTION    = elements.SECTION;
+var SPAN       = elements.SPAN;
 var H1         = elements.H1;
 var H4         = elements.H4;
 
@@ -38,15 +40,12 @@ function ERLKING(prefixes, viewport) {
     DIV(
       null,
       ERL_HEADER,
-      SECTION(
+      DIV(
         _terminalConfig,
         DIV(
           _erlViewportConfig,
           lines,
-          ERL_PROMPT(promptLabel),
-          ERL_PRE(prompt.preCursor),
-          ERL_CURSOR,
-          ERL_POST(prompt.postCursor)))));
+          ERL_INPUT(promptLabel, prompt.preCursor, prompt.postCursor)))));
 }
 
 var defaultCompletionLabel = '  ';
