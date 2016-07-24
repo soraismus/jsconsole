@@ -9,7 +9,10 @@ function render(_viewModel, rootChild, getCursor, controlConfig) {
     var labels = { promptLabel: controlConfig.promptLabel };
     var newViewModel = getViewModel(labels, model);
     modifyElement(rootChild, diff(newViewModel, viewModel));
-    scroll(rootChild, getCursor());
+
+    //scroll(rootChild, getCursor());
+    scroll(document.getElementsByClassName('erl-viewport')[0], getCursor());
+
     controlConfig.viewport = model;
     viewModel = newViewModel;
   };
