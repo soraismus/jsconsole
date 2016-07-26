@@ -1,16 +1,16 @@
 var SPAN = require('../../../lib/elements').SPAN;
 
+function ERL_ENTRY(text) {
+  return SPAN(_entryConfig, text + newline);
+}
+
 function ERL_INPUT(promptText, preText, postText) {
   return SPAN(
-    null,
+    _inputConfig,
     ERL_PROMPT(promptText),
     ERL_PRE(preText),
     ERL_CURSOR,
     ERL_POST(postText));
-}
-
-function ERL_LINE(text) {
-  return SPAN(_lineConfig, text + newline);
 }
 
 function ERL_POST(text) {
@@ -37,8 +37,13 @@ var ERL_CURSOR = SPAN(
   },
   underscore);
 
-var _lineConfig = {
-  classes: { 'erl-line': true },
+var _entryConfig = {
+  classes: { 'erl-entry': true, 'erl-line': true },
+};
+
+var _inputConfig = {
+  id: 'erl-input',
+  classes: { 'erl-input': true, 'erl-line': true }
 };
 
 var _postConfig = {
@@ -59,8 +64,8 @@ var _promptConfig = {
 
 module.exports = {
   ERL_CURSOR : ERL_CURSOR,
+  ERL_ENTRY  : ERL_ENTRY,
   ERL_INPUT  : ERL_INPUT,
-  ERL_LINE   : ERL_LINE,
   ERL_POST   : ERL_POST,
   ERL_PRE    : ERL_PRE,
   ERL_PROMPT : ERL_PROMPT
