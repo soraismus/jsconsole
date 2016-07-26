@@ -42,11 +42,51 @@ function ERLKING(prefixes, viewport) {
       ERL_HEADER,
       DIV(
         _terminalConfig,
+        X_SCROLLBAR,
+        Y_SCROLLBAR,
         DIV(
           _erlViewportConfig,
           entries,
           ERL_INPUT(promptLabel, prompt.preCursor, prompt.postCursor)))));
 }
+
+var X_SCROLLBAR = DIV(
+  {
+    id: 'erl-x-scroll-track',
+    classes: {
+      'erl-x-scroll-track': true,
+      'erl-scroll-track': true
+    }
+  },
+  DIV({
+    id: 'erl-x-scroll-thumb',
+    classes: {
+      'erl-x-scroll-thumb': true,
+      'erl-scroll-thumb': true
+    }
+  }));
+
+var Y_SCROLLBAR = DIV(
+  {
+    id: 'erl-y-scroll-track',
+    classes: {
+      'erl-y-scroll-track': true,
+      'erl-scroll-track': true
+    }
+  },
+  DIV({
+    id: 'erl-y-scroll-thumb',
+    classes: {
+      'erl-y-scroll-thumb': true,
+      'erl-scroll-thumb': true
+    }
+  }));
+
+var defaultCompletionLabel = '  ';
+var defaultDisplayLabel = '';
+var defaultErrorLabel = '...> ';
+var defaultPromptLabel = '> ';
+var defaultResponseLabel = '==> ';
 
 var defaultCompletionLabel = '  ';
 var defaultDisplayLabel = '';
