@@ -37,3 +37,44 @@ function initialize(config) {
 }
 
 module.exports = initialize;
+
+
+function f0() {
+  var ratio;
+
+  var viewport = document.getElementById('erl-viewport');
+  var xTrack = document.getElementById('erl-x-scroll-track');
+  var yTrack = document.getElementById('erl-y-scroll-track');
+  var xThumb = document.getElementById('erl-x-scroll-thumb');
+  var yThumb = document.getElementById('erl-y-scroll-thumb');
+
+  var viewportWidth = viewport.offsetWidth;
+  var terminalWidth = viewport.scrollWidth;
+
+  if (viewportWidth < terminalWidth) {
+    console.log('part is hidden');
+  }
+}
+
+/*
+`viewport.offsetWidth` is the size of the 'viewport'.
+`viewport.scrollWidth` is the size of the underlying 'terminal'.
+
+The scroll track's length should be offsetWidth / scrollWdith.
+
+
+var X_SCROLLBAR = DIV(
+  {
+    id: 'erl-x-scroll-track',
+    classes: {
+      'erl-x-scroll-track': true,
+      'erl-scroll-track': true
+    }
+  },
+  DIV({
+    id: 'erl-x-scroll-thumb',
+    classes: {
+      'erl-x-scroll-thumb': true,
+      'erl-scroll-thumb': true
+
+*/
