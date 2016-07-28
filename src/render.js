@@ -18,6 +18,7 @@ function render(_viewModel, rootChild, getCursor, controlConfig) {
 
     f0();
     f1();
+    f2();
 
   };
 }
@@ -85,3 +86,55 @@ function f1() {
     yThumbStyle.visibility = 'visible';
   }
 }
+
+function f2() {
+  var viewport = document.getElementsByClassName('erl-viewport')[0];
+  var yTrack = document.getElementById('erl-y-scroll-track');
+  var yThumb = document.getElementById('erl-y-scroll-thumb');
+
+  var yThumbHeight = yThumb.offsetHeight;
+  var yTrackHeight = yTrack.offsetHeight;
+  var viewportHeight = viewport.offsetHeight;
+
+  var _ullage = yTrackHeight - yThumbHeight;
+
+  function mouseMove_vertical(event) {
+    var _top = event.clientY - yTrack.getBoundingClientRect().top;
+    var top = _top < 0 ? 0 : _top > _ullage ? _ullage : _top;
+    var topPx = top + 'px';
+    yThumb.style.top = topPx;
+  };
+
+  function mouseDown_vertical() {
+    document.addEventListener('mousemove', mouseMove_vertical);
+    document.addEventListener('mouseup', mouseUp_vertical);
+  };
+
+  function mouseUp_vertical() {
+    document.removeEventListener('mousemove', mouseMove_vertical);
+    document.removeEventListener('mouseup', mouseUp_vertical);
+  };
+
+  yThumb.removeEventListener('mousedown', mouseDown_vertical);
+  yThumb.addEventListener('mousedown', mouseDown_vertical);
+}
+
+// ------------------------------------------------------------------------
+function mouseMove_horizontal(event) {
+  var _left = event.clientX - container.offsetLeft - horizontalTrack.offsetLeft;
+  var left = _left < 0 ? 0 : _left > horizontalUllage ? horizontalUllage : _left;
+  horizontalHandle.style.left = left + 'px';
+  orb.style.left = (left - 150) + 'px';
+};
+
+function mouseDown_horizontal() {
+  document.addEventListener('mousemove', mouseMove_horizontal);
+  document.addEventListener('mouseup', mouseUp_horizontal);
+};
+
+function mouseUp_horizontal() {
+  document.removeEventListener('mousemove', mouseMove_horizontal);
+  document.removeEventListener('mouseup', mouseUp_horizontal);
+};
+
+//horizontalHandle.addEventListener('mousedown', mouseDown_horizontal);
