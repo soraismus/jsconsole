@@ -1,7 +1,7 @@
 var margin = 5;
 
-function getCursorOffset(cursor, viewport) {
-  return cursor.offsetLeft + cursor.offsetWidth + margin - viewport.offsetWidth;
+function getCursorOffset(cursor, node) {
+  return cursor.offsetLeft + cursor.offsetWidth + margin - node.offsetWidth;
 }
 
 function scroll(node, cursor) {

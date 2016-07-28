@@ -104,6 +104,8 @@ function f2() {
     var top = _top < 0 ? 0 : _top > _ullage ? _ullage : _top;
     var topPx = top + 'px';
     yThumb.style.top = topPx;
+
+    __scroll(viewport, viewport.offsetLeft, top);
   };
 
   function mouseDown_vertical() {
@@ -135,6 +137,8 @@ function f3() {
     var _left = event.clientX - xTrack.getBoundingClientRect().left;
     var left = _left < 0 ? 0 : _left > _ullage ? _ullage : _left;
     xThumb.style.left = left + 'px';
+
+    __scroll(viewport, left, viewport.offsetTop);
   };
 
   function mouseUp_horizontal() {
@@ -149,4 +153,9 @@ function f3() {
 
   xThumb.removeEventListener('mousedown', mouseDown_horizontal);
   xThumb.addEventListener('mousedown', mouseDown_horizontal);
+}
+
+function __scroll(node, x, y) {
+  node.scrollLeft = x;
+  node.scrollTop = y;
 }
