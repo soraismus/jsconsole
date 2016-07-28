@@ -19,6 +19,7 @@ function render(_viewModel, rootChild, getCursor, controlConfig) {
     f0();
     f1();
     f2();
+    f3();
 
   };
 }
@@ -119,22 +120,33 @@ function f2() {
   yThumb.addEventListener('mousedown', mouseDown_vertical);
 }
 
-// ------------------------------------------------------------------------
-function mouseMove_horizontal(event) {
-  var _left = event.clientX - container.offsetLeft - horizontalTrack.offsetLeft;
-  var left = _left < 0 ? 0 : _left > horizontalUllage ? horizontalUllage : _left;
-  horizontalHandle.style.left = left + 'px';
-  orb.style.left = (left - 150) + 'px';
-};
+function f3() {
+  var viewport = document.getElementsByClassName('erl-viewport')[0];
+  var xTrack = document.getElementById('erl-x-scroll-track');
+  var xThumb = document.getElementById('erl-x-scroll-thumb');
 
-function mouseDown_horizontal() {
-  document.addEventListener('mousemove', mouseMove_horizontal);
-  document.addEventListener('mouseup', mouseUp_horizontal);
-};
+  var xThumbWidth = xThumb.offsetWidth;
+  var xTrackWidth = xTrack.offsetWidth;
+  var viewportWidth = viewport.offsetWidth;
 
-function mouseUp_horizontal() {
-  document.removeEventListener('mousemove', mouseMove_horizontal);
-  document.removeEventListener('mouseup', mouseUp_horizontal);
-};
+  var _ullage = xTrackWidth - xThumbWidth;
 
-//horizontalHandle.addEventListener('mousedown', mouseDown_horizontal);
+  function mouseMove_horizontal(event) {
+    var _left = event.clientX - xTrack.getBoundingClientRect().left;
+    var left = _left < 0 ? 0 : _left > _ullage ? _ullage : _left;
+    xThumb.style.left = left + 'px';
+  };
+
+  function mouseUp_horizontal() {
+    document.removeEventListener('mousemove', mouseMove_horizontal);
+    document.removeEventListener('mouseup', mouseUp_horizontal);
+  };
+
+  function mouseDown_horizontal() {
+    document.addEventListener('mousemove', mouseMove_horizontal);
+    document.addEventListener('mouseup', mouseUp_horizontal);
+  };
+
+  xThumb.removeEventListener('mousedown', mouseDown_horizontal);
+  xThumb.addEventListener('mousedown', mouseDown_horizontal);
+}
