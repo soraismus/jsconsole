@@ -36,7 +36,6 @@ function f0() {
   var prompt = document.getElementById('erl-prompt');
 
   var xTrackWidth = xTrack.offsetWidth;
-  //var xThumbWidth = xThumb.offsetWidth;
   var viewportWidth = viewport.offsetWidth;
   var terminalWidth = viewport.scrollWidth;
 
@@ -59,9 +58,6 @@ function f0() {
   }
 }
 
-    //xThumbWidth = viewportRatio * xThumbWidth;
-    //yThumbHeight = _viewportRatio * yThumbHeight;
-
 function f1() {
   var viewport = document.getElementsByClassName('erl-viewport')[0];
   var yTrack = document.getElementById('erl-y-scroll-track');
@@ -69,7 +65,6 @@ function f1() {
   var cursor = document.getElementById('erl-cursor');
 
   var yTrackHeight = yTrack.offsetHeight;
-  //var yThumbHeight = yThumb.offsetHeight;
   var viewportHeight = viewport.offsetHeight;
   var terminalHeight = viewport.scrollHeight;
 
@@ -89,13 +84,4 @@ function f1() {
     yThumbStyle.height = _viewportPercentage;
     yThumbStyle.visibility = 'visible';
   }
-
-    // viewport.scrollHeight ~=~ cursor.offsetTop;
-    // viewport.scrollHeight + viewport.scrollTop ~=~ cursor.offsetTop + cursor.offsetHeight;
-
-    //var yPosition = cursor.offsetTop + cursor.offsetHeight - viewport.scrollTop;
-    //var yPosition = cursor.offsetTop;
-    //var yPosition = cursor.offsetHeight;
-    //var yPosition = cursor.offsetHeight + cursor.offsetTop;
-    //var yPosition = cursor.offsetHeight + cursor.offsetTop - viewport.offsetTop;
 }
