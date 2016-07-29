@@ -16,10 +16,14 @@ function render(_viewModel, rootChild, getCursor, controlConfig) {
     controlConfig.viewport = model;
     viewModel = newViewModel;
 
+    /*
     f0();
     f1();
     f2();
     f3();
+    */
+
+    document.dispatchEvent(new Event('terminal-render'))
   };
 }
 
