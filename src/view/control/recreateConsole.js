@@ -18,7 +18,7 @@ var ERL_HEADER = SECTION(
       id: 'erl-header',
       classes: { 'head': true }
     },
-    H1(null, 'Erlking Lisp Console\n'),
+    H1(null, 'Erlkönig Lisp Console\n'),
     H4(null, 'A terminal emulator and lisp interpreter\n'));
 
 var emptyString = '';
