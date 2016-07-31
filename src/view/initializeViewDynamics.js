@@ -4,9 +4,8 @@ var scroll             = require('./control/scroll');
 function initializeViewDynamics(rootChild, getCursor) {
   var erlViewport = document.getElementsByClassName('erl-viewport')[0];
 
-  if (detectCssScrollbar()) {
-    erlViewport.style.overflow = 'auto';
-  } else {
+  if (!detectCssScrollbar()) {
+    erlViewport.style.overflow = 'hidden';
     document.addEventListener('terminal-render', function (event) {
       f0();
       f1();
@@ -14,10 +13,6 @@ function initializeViewDynamics(rootChild, getCursor) {
       f3();
     });
   }
-
-  window.addEventListener('resize', function (event) {
-    scroll(erlViewport, getCursor());
-  });
 }
 
 module.exports = initializeViewDynamics;
@@ -119,11 +114,13 @@ function f2() {
   };
 
   function mouseDown_vertical() {
+    yThumb.style.backgroundColor = 'rgb(0, 80, 0)';
     document.addEventListener('mousemove', mouseMove_vertical);
     document.addEventListener('mouseup', mouseUp_vertical);
   };
 
   function mouseUp_vertical() {
+    yThumb.style.backgroundColor = 'rgba(55, 53, 50, 0.5)';
     document.removeEventListener('mousemove', mouseMove_vertical);
     document.removeEventListener('mouseup', mouseUp_vertical);
   };
@@ -154,11 +151,13 @@ function f3() {
   };
 
   function mouseUp_horizontal() {
+    xThumb.style.backgroundColor = 'rgba(55, 53, 50, 0.5)';
     document.removeEventListener('mousemove', mouseMove_horizontal);
     document.removeEventListener('mouseup', mouseUp_horizontal);
   };
 
   function mouseDown_horizontal() {
+    xThumb.style.backgroundColor = 'rgb(0, 80, 0)';
     document.addEventListener('mousemove', mouseMove_horizontal);
     document.addEventListener('mouseup', mouseUp_horizontal);
   };
